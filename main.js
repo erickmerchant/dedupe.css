@@ -130,15 +130,15 @@ command('css', function ({option, parameter}) {
         .${prefix}align-right {text-align: right; }
       `)
 
-      if (css.columns) {
-        range(1, css.columns).forEach(function (columns) {
+      if (css.widths) {
+        range(1, css.widths).forEach(function (width) {
           output.push(outdent`
-            .${prefix}columns-${columns} { width: calc(100% / 3 * ${columns}); }
+            .${prefix}width-${width} { width: calc(100% / 3 * ${width}); }
           `)
         })
 
         output.push(outdent`
-          .${prefix}columns-${css.columns} { width: 100%; }
+          .${prefix}width-${css.widths} { width: 100%; }
         `)
       }
 
