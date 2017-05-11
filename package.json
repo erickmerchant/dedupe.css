@@ -1,0 +1,28 @@
+{
+  "name": "@erickmerchant/css",
+  "version": "1.0.0",
+  "description": "a cli to generate atomic css",
+  "main": "main.js",
+  "scripts": {
+    "test": "standard"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/erickmerchant/css.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/erickmerchant/css/issues"
+  },
+  "homepage": "https://github.com/erickmerchant/css#readme",
+  "dependencies": {
+    "lodash.range": "^3.2.0",
+    "outdent": "^0.3.0",
+    "sergeant": "^15.4.0",
+    "thenify": "^3.2.1"
+  },
+  "devDependencies": {
+    "standard": "^10.0.2"
+  }
+}
