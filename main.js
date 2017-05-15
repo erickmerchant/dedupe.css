@@ -164,6 +164,14 @@ command('css', function ({option, parameter}) {
               margin-bottom: var(--whitespace-${space});
               margin-left: var(--whitespace-${space});
             }
+            .${prefix}margin-horizontal-${space} {
+              margin-right: var(--whitespace-${space});
+              margin-left: var(--whitespace-${space});
+            }
+            .${prefix}margin-vertical-${space} {
+              margin-top: var(--whitespace-${space});
+              margin-bottom: var(--whitespace-${space});
+            }
             .${prefix}margin-top-${space} { margin-top: var(--whitespace-${space}); }
             .${prefix}margin-right-${space} { margin-right: var(--whitespace-${space}); }
             .${prefix}margin-bottom-${space} { margin-bottom: var(--whitespace-${space}); }
@@ -176,6 +184,14 @@ command('css', function ({option, parameter}) {
               padding-right: var(--whitespace-${space});
               padding-bottom: var(--whitespace-${space});
               padding-left: var(--whitespace-${space});
+            }
+            .${prefix}padding-horizontal-${space} {
+              padding-right: var(--whitespace-${space});
+              padding-left: var(--whitespace-${space});
+            }
+            .${prefix}padding-vertical-${space} {
+              padding-top: var(--whitespace-${space});
+              padding-bottom: var(--whitespace-${space});
             }
             .${prefix}padding-top-${space} { padding-top: var(--whitespace-${space}); }
             .${prefix}padding-right-${space} { padding-right: var(--whitespace-${space}); }
