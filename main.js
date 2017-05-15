@@ -67,6 +67,18 @@ command('css', function ({option, parameter}) {
 
     output.push('}')
 
+    output.push(outdent`
+      *, *:before, *:after { box-sizing: border-box; }
+      .content-box { box-sizing: content-box; }
+      .fit-width { max-width: 100%; }
+      .full-width { width: 100%; }
+      .bold { font-weight: bold; }
+      .italic { font-style: italic; }
+      .center { text-align: center; }
+      .left { text-align: left; }
+      .right { text-align: right; }
+    `)
+
     addBreakpointStyles()
 
     if (css.breakpoints && Object.keys(css.breakpoints).length) {
