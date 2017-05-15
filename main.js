@@ -177,7 +177,9 @@ command('css', function ({option, parameter}) {
             .${prefix}margin-bottom-${space} { margin-bottom: var(--whitespace-${space}); }
             .${prefix}margin-left-${space} { margin-left: var(--whitespace-${space}); }
           `)
+        })
 
+        Object.keys(css.whitespace).concat([0]).forEach(function (space) {
           output.push(outdent`
             .${prefix}padding-${space} {
               padding-top: var(--whitespace-${space});
