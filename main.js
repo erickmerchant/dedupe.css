@@ -57,6 +57,14 @@ command('css', function ({option, parameter}) {
       })
     }
 
+    if (css.type && Object.keys(css.type).length) {
+      Object.keys(css.type).forEach(function (key) {
+        output.push(outdent`
+          --type-${key}: ${css.type[key]}rem;
+        `)
+      })
+    }
+
     output.push('}')
 
     addBreakpointStyles()
@@ -72,6 +80,14 @@ command('css', function ({option, parameter}) {
         output.push(outdent`
           .${key} { color: var(--${key}); }
           .background-${key} { background-color: var(--${key}); }
+        `)
+      })
+    }
+
+    if (css.type && Object.keys(css.type).length) {
+      Object.keys(css.type).forEach(function (key) {
+        output.push(outdent`
+          .type-${key} { font-size: var(--type-${key}); }
         `)
       })
     }
