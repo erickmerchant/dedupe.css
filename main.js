@@ -68,7 +68,8 @@ command('css', function ({option, parameter}) {
     output.push('}')
 
     output.push(outdent`
-      *, *:before, *:after { box-sizing: border-box; }
+      *, *:before, *:after { box-sizing: inherit; }
+      .border-box { box-sizing: border-box; }
       .content-box { box-sizing: content-box; }
       .fit-width { max-width: 100%; }
       .full-width { width: 100%; }
