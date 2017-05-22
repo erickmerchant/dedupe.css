@@ -71,6 +71,8 @@ command('css', function ({option, parameter}) {
       *, *:before, *:after { box-sizing: inherit; }
       .border-box { box-sizing: border-box; }
       .content-box { box-sizing: content-box; }
+      .bold { font-weight: bold; }
+      .italic { font-style: italic; }
     `)
 
     addBreakpointStyles()
@@ -141,8 +143,6 @@ command('css', function ({option, parameter}) {
         .${prefix}left-0 { left: 0; }
         .${prefix}fit-width { max-width: 100%; }
         .${prefix}full-width { width: 100%; }
-        .${prefix}bold { font-weight: bold; }
-        .${prefix}italic { font-style: italic; }
         .${prefix}center { text-align: center; }
         .${prefix}left { text-align: left; }
         .${prefix}right { text-align: right; }
