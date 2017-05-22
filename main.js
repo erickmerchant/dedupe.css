@@ -71,13 +71,6 @@ command('css', function ({option, parameter}) {
       *, *:before, *:after { box-sizing: inherit; }
       .border-box { box-sizing: border-box; }
       .content-box { box-sizing: content-box; }
-      .fit-width { max-width: 100%; }
-      .full-width { width: 100%; }
-      .bold { font-weight: bold; }
-      .italic { font-style: italic; }
-      .center { text-align: center; }
-      .left { text-align: left; }
-      .right { text-align: right; }
     `)
 
     addBreakpointStyles()
@@ -93,14 +86,6 @@ command('css', function ({option, parameter}) {
         output.push(outdent`
           .${key} { color: var(--${key}); }
           .background-${key} { background-color: var(--${key}); }
-        `)
-      })
-    }
-
-    if (css.type && Object.keys(css.type).length) {
-      Object.keys(css.type).forEach(function (key) {
-        output.push(outdent`
-          .type-${key} { font-size: var(--type-${key}); }
         `)
       })
     }
@@ -154,6 +139,13 @@ command('css', function ({option, parameter}) {
         .${prefix}right-0 { right: 0; }
         .${prefix}bottom-0 { bottom: 0; }
         .${prefix}left-0 { left: 0; }
+        .${prefix}fit-width { max-width: 100%; }
+        .${prefix}full-width { width: 100%; }
+        .${prefix}bold { font-weight: bold; }
+        .${prefix}italic { font-style: italic; }
+        .${prefix}center { text-align: center; }
+        .${prefix}left { text-align: left; }
+        .${prefix}right { text-align: right; }
       `)
 
       if (css.widths) {
@@ -212,6 +204,14 @@ command('css', function ({option, parameter}) {
             .${prefix}padding-right-${space} { padding-right: var(--whitespace-${space}); }
             .${prefix}padding-bottom-${space} { padding-bottom: var(--whitespace-${space}); }
             .${prefix}padding-left-${space} { padding-left: var(--whitespace-${space}); }
+          `)
+        })
+      }
+
+      if (css.type && Object.keys(css.type).length) {
+        Object.keys(css.type).forEach(function (key) {
+          output.push(outdent`
+            .${prefix}type-${key} { font-size: var(--type-${key}); }
           `)
         })
       }
