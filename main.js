@@ -151,7 +151,7 @@ command('css', function ({option, parameter}) {
       if (css.widths) {
         range(1, css.widths).forEach(function (width) {
           output.push(outdent`
-            .${prefix}width-${width} { width: calc(100% / 3 * ${width}); }
+            .${prefix}width-${width} { width: calc(100% / ${css.widths} * ${width}); }
           `)
         })
 
