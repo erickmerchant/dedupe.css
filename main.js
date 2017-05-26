@@ -6,7 +6,7 @@ const path = require('path')
 const outdent = require('outdent')
 const range = require('lodash.range')
 const thenify = require('thenify')
-const fsWriteFile = thenify(require('fs').writeFile)
+const writeFile = thenify(require('fs').writeFile)
 
 command('css', function ({option, parameter}) {
   parameter('file', {
@@ -92,7 +92,7 @@ command('css', function ({option, parameter}) {
       })
     }
 
-    return fsWriteFile(path.join(process.cwd(), args.file), output.join('\n'))
+    return writeFile(path.join(process.cwd(), args.file), output.join('\n'))
 
     function addBreakpointStyles (key) {
       if (key) {
