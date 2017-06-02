@@ -149,15 +149,13 @@ command('css', function ({option, parameter}) {
       `)
 
       if (css.widths) {
-        range(1, css.widths).forEach(function (width) {
-          output.push(outdent`
-            .${prefix}width-${width} { width: calc(100% / ${css.widths} * ${width}); }
-          `)
+        css.widths.forEach(function (columns) {
+          range(1, columns).forEach(function (column) {
+            output.push(outdent`
+              .${prefix}width-${column}-of-${columns} { width: calc(100% / ${columns} * ${column}); }
+            `)
+          })
         })
-
-        output.push(outdent`
-          .${prefix}width-${css.widths} { width: 100%; }
-        `)
       }
 
       if (css.whitespace) {
