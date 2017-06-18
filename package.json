@@ -20,8 +20,8 @@
   },
   "homepage": "https://github.com/erickmerchant/css#readme",
   "dependencies": {
-    "lodash.range": "^3.2.0",
     "outdent": "^0.3.0",
+    "postcss": "^6.0.2",
     "sergeant": "^15.4.0",
     "thenify": "^3.2.1"
   },
