@@ -167,48 +167,60 @@ command('css', ({option, parameter}) => {
         })
 
         vars.whitespaces.concat([0, 'auto']).forEach((space) => {
+          let value = space
+
+          if (![0, 'auto'].includes(space)) {
+            value = `var(--whitespace-${space})`
+          }
+
           output.push(outdent`
             .${prefix}margin-${space} {
-              margin-top: var(--whitespace-${space});
-              margin-right: var(--whitespace-${space});
-              margin-bottom: var(--whitespace-${space});
-              margin-left: var(--whitespace-${space});
+              margin-top: ${value};
+              margin-right: ${value};
+              margin-bottom: ${value};
+              margin-left: ${value};
             }
             .${prefix}margin-horizontal-${space} {
-              margin-right: var(--whitespace-${space});
-              margin-left: var(--whitespace-${space});
+              margin-right: ${value};
+              margin-left: ${value};
             }
             .${prefix}margin-vertical-${space} {
-              margin-top: var(--whitespace-${space});
-              margin-bottom: var(--whitespace-${space});
+              margin-top: ${value};
+              margin-bottom: ${value};
             }
-            .${prefix}margin-top-${space} { margin-top: var(--whitespace-${space}); }
-            .${prefix}margin-right-${space} { margin-right: var(--whitespace-${space}); }
-            .${prefix}margin-bottom-${space} { margin-bottom: var(--whitespace-${space}); }
-            .${prefix}margin-left-${space} { margin-left: var(--whitespace-${space}); }
+            .${prefix}margin-top-${space} { margin-top: ${value}; }
+            .${prefix}margin-right-${space} { margin-right: ${value}; }
+            .${prefix}margin-bottom-${space} { margin-bottom: ${value}; }
+            .${prefix}margin-left-${space} { margin-left: ${value}; }
           `)
         })
 
         vars.whitespaces.concat([0]).forEach((space) => {
+          let value = space
+
+          if (![0].includes(space)) {
+            value = `var(--whitespace-${space})`
+          }
+
           output.push(outdent`
             .${prefix}padding-${space} {
-              padding-top: var(--whitespace-${space});
-              padding-right: var(--whitespace-${space});
-              padding-bottom: var(--whitespace-${space});
-              padding-left: var(--whitespace-${space});
+              padding-top: ${value};
+              padding-right: ${value};
+              padding-bottom: ${value};
+              padding-left: ${value};
             }
             .${prefix}padding-horizontal-${space} {
-              padding-right: var(--whitespace-${space});
-              padding-left: var(--whitespace-${space});
+              padding-right: ${value};
+              padding-left: ${value};
             }
             .${prefix}padding-vertical-${space} {
-              padding-top: var(--whitespace-${space});
-              padding-bottom: var(--whitespace-${space});
+              padding-top: ${value};
+              padding-bottom: ${value};
             }
-            .${prefix}padding-top-${space} { padding-top: var(--whitespace-${space}); }
-            .${prefix}padding-right-${space} { padding-right: var(--whitespace-${space}); }
-            .${prefix}padding-bottom-${space} { padding-bottom: var(--whitespace-${space}); }
-            .${prefix}padding-left-${space} { padding-left: var(--whitespace-${space}); }
+            .${prefix}padding-top-${space} { padding-top: ${value}; }
+            .${prefix}padding-right-${space} { padding-right: ${value}; }
+            .${prefix}padding-bottom-${space} { padding-bottom: ${value}; }
+            .${prefix}padding-left-${space} { padding-left: ${value}; }
           `)
         })
 
