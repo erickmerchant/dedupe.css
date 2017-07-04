@@ -30,7 +30,7 @@ command('css', ({option, parameter}) => {
         colors: [],
         widths: [],
         whitespaces: [],
-        typesizes: []
+        fontSizes: []
       }
 
       const varTypes = []
@@ -59,8 +59,8 @@ command('css', ({option, parameter}) => {
       })
 
       varTypes.push(function (node) {
-        if (node.prop.startsWith('--typesize-')) {
-          vars.typesizes.push(node.prop.substr('--typesize-'.length))
+        if (node.prop.startsWith('--font-size-')) {
+          vars.fontSizes.push(node.prop.substr('--font-size-'.length))
         }
       })
 
@@ -224,9 +224,11 @@ command('css', ({option, parameter}) => {
           `)
         })
 
-        vars.typesizes.forEach((key) => {
+        vars.fontSizes.forEach((key) => {
+          const suffix = key != null ? '-' + key : ''
+
           output.push(outdent`
-            .${prefix}typesize-${key} { font-size: var(--typesize-${key}); }
+            .${prefix}font-size${suffix} { font-size: var(--font-size${suffix}); }
           `)
         })
 
