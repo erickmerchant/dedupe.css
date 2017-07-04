@@ -216,9 +216,9 @@ command('css', ({option, parameter}) => {
           .${prefix}left-0 { left: 0; }
           .${prefix}fit-width { max-width: 100%; }
           .${prefix}full-width { width: 100%; }
-          .${prefix}center { text-align: center; }
-          .${prefix}left { text-align: left; }
-          .${prefix}right { text-align: right; }
+          .${prefix}align-center { text-align: center; }
+          .${prefix}align-left { text-align: left; }
+          .${prefix}align-right { text-align: right; }
         `)
 
         vars.widths.forEach(function (width) {
