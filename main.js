@@ -28,6 +28,8 @@ command('css', ({option, parameter}) => {
       const vars = {
         breakpoints: [],
         colors: [],
+        borderWidths: [],
+        borderRadii: [],
         widths: [],
         whitespaces: [],
         fontSizes: []
@@ -43,6 +45,22 @@ command('css', ({option, parameter}) => {
          node.value.startsWith('rgba(')
        ) {
           vars.colors.push(node.prop.substr(2))
+        }
+      })
+
+      varTypes.push(function (node) {
+        if (node.prop.startsWith('--border-width-')) {
+          vars.borderWidths.push(node.prop.substr('--border-width-'.length))
+        } else if (node.prop === '--border-width') {
+          vars.borderWidths.push(null)
+        }
+      })
+
+      varTypes.push(function (node) {
+        if (node.prop.startsWith('--border-radius-')) {
+          vars.borderRadii.push(node.prop.substr('--border-radius-'.length))
+        } else if (node.prop === '--border-radius') {
+          vars.borderRadii.push(null)
         }
       })
 
@@ -101,6 +119,47 @@ command('css', ({option, parameter}) => {
         output.push(outdent`
           .${key} { color: var(--${key}); }
           .background-${key} { background-color: var(--${key}); }
+          .border-${key} { border-color: var(--${key}); }
+        `)
+      })
+
+      output.push(outdent`
+        .border {
+          border-top-style: solid;
+          border-right-style: solid;
+          border-bottom-style: solid;
+          border-left-style: solid;
+        }
+        .border-top { border-top-style: solid; }
+        .border-right { border-right-style: solid; }
+        .border-bottom { border-bottom-style: solid; }
+        .border-left { border-left-style: solid; }
+      `)
+
+      vars.borderWidths.forEach(function (border) {
+        const suffix = border != null ? '-' + border : ''
+
+        output.push(outdent`
+          .border${suffix} { border-width: var(--border-width${suffix}); }
+
+          .border${suffix} {
+            border-top-width: var(--border-width${suffix});
+            border-right-width: var(--border-width${suffix});
+            border-bottom-width: var(--border-width${suffix});
+            border-left-width: var(--border-width${suffix});
+          }
+          .border-top${suffix} { border-top-width: var(--border-width${suffix}); }
+          .border-right${suffix} { border-right-width: var(--border-width${suffix}); }
+          .border-bottom${suffix} { border-bottom-width: var(--border-width${suffix}); }
+          .border-left${suffix} { border-left-width: var(--border-width${suffix}); }
+        `)
+      })
+
+      vars.borderRadii.forEach((key) => {
+        const suffix = key != null ? '-' + key : ''
+
+        output.push(outdent`
+          .border-radius${suffix} { border-radius: var(--border-radius${suffix}); }
         `)
       })
 
