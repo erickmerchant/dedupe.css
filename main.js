@@ -107,6 +107,8 @@ command('css', ({option, parameter}) => {
         .content-box { box-sizing: content-box; }
         .bold { font-weight: bold; }
         .italic { font-style: italic; }
+        .right { float: right; }
+        .left { float: left; }
       `)
 
       addBreakpointStyles()
