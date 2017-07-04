@@ -67,18 +67,24 @@ command('css', ({option, parameter}) => {
       varTypes.push(function (node) {
         if (node.prop.startsWith('--width-')) {
           vars.widths.push(node.prop.substr('--width-'.length))
+        } else if (node.prop === '--width') {
+          vars.widths.push(null)
         }
       })
 
       varTypes.push(function (node) {
         if (node.prop.startsWith('--whitespace-')) {
           vars.whitespaces.push(node.prop.substr('--whitespace-'.length))
+        } else if (node.prop === '--whitespace') {
+          vars.whitespaces.push(null)
         }
       })
 
       varTypes.push(function (node) {
         if (node.prop.startsWith('--font-size-')) {
           vars.fontSizes.push(node.prop.substr('--font-size-'.length))
+        } else if (node.prop === '--font-size') {
+          vars.fontSizes.push(null)
         }
       })
 
@@ -222,66 +228,70 @@ command('css', ({option, parameter}) => {
         `)
 
         vars.widths.forEach(function (width) {
+          const suffix = width != null ? '-' + width : ''
+
           output.push(outdent`
-            .${prefix}width-${width} { width: var(--width-${width}); }
+            .${prefix}width${suffix} { width: var(--width${suffix}); }
           `)
         })
 
         vars.whitespaces.concat([0, 'auto']).forEach((space) => {
           let value = space
+          const suffix = space != null ? '-' + space : ''
 
           if (![0, 'auto'].includes(space)) {
-            value = `var(--whitespace-${space})`
+            value = `var(--whitespace${suffix})`
           }
 
           output.push(outdent`
-            .${prefix}margin-${space} {
+            .${prefix}margin${suffix} {
               margin-top: ${value};
               margin-right: ${value};
               margin-bottom: ${value};
               margin-left: ${value};
             }
-            .${prefix}margin-horizontal-${space} {
+            .${prefix}margin-horizontal${suffix} {
               margin-right: ${value};
               margin-left: ${value};
             }
-            .${prefix}margin-vertical-${space} {
+            .${prefix}margin-vertical${suffix} {
               margin-top: ${value};
               margin-bottom: ${value};
             }
-            .${prefix}margin-top-${space} { margin-top: ${value}; }
-            .${prefix}margin-right-${space} { margin-right: ${value}; }
-            .${prefix}margin-bottom-${space} { margin-bottom: ${value}; }
-            .${prefix}margin-left-${space} { margin-left: ${value}; }
+            .${prefix}margin-top${suffix} { margin-top: ${value}; }
+            .${prefix}margin-right${suffix} { margin-right: ${value}; }
+            .${prefix}margin-bottom${suffix} { margin-bottom: ${value}; }
+            .${prefix}margin-left${suffix} { margin-left: ${value}; }
           `)
         })
 
         vars.whitespaces.concat([0]).forEach((space) => {
           let value = space
+          const suffix = space != null ? '-' + space : ''
 
           if (![0].includes(space)) {
-            value = `var(--whitespace-${space})`
+            value = `var(--whitespace${suffix})`
           }
 
           output.push(outdent`
-            .${prefix}padding-${space} {
+            .${prefix}padding${suffix} {
               padding-top: ${value};
               padding-right: ${value};
               padding-bottom: ${value};
               padding-left: ${value};
             }
-            .${prefix}padding-horizontal-${space} {
+            .${prefix}padding-horizontal${suffix} {
               padding-right: ${value};
               padding-left: ${value};
             }
-            .${prefix}padding-vertical-${space} {
+            .${prefix}padding-vertical${suffix} {
               padding-top: ${value};
               padding-bottom: ${value};
             }
-            .${prefix}padding-top-${space} { padding-top: ${value}; }
-            .${prefix}padding-right-${space} { padding-right: ${value}; }
-            .${prefix}padding-bottom-${space} { padding-bottom: ${value}; }
-            .${prefix}padding-left-${space} { padding-left: ${value}; }
+            .${prefix}padding-top${suffix} { padding-top: ${value}; }
+            .${prefix}padding-right${suffix} { padding-right: ${value}; }
+            .${prefix}padding-bottom${suffix} { padding-bottom: ${value}; }
+            .${prefix}padding-left${suffix} { padding-left: ${value}; }
           `)
         })
 
