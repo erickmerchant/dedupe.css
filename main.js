@@ -182,6 +182,7 @@ command('css', ({option, parameter}) => {
 
         output.push(outdent`
           .${prefix}flex { display: flex;  }
+          .${prefix}inline-flex { display: inline-flex;  }
           .${prefix}auto { flex: 1 1 auto;  }
           .${prefix}row { flex-direction: row; }
           .${prefix}row-reverse { flex-direction: row-reverse; }
