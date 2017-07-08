@@ -31,6 +31,7 @@ command('css', ({option, parameter}) => {
         borderWidths: [],
         borderRadii: [],
         widths: [],
+        maxWidths: [],
         whitespaces: [],
         fontSizes: []
       }
@@ -69,6 +70,14 @@ command('css', ({option, parameter}) => {
           vars.widths.push(node.prop.substr('--width-'.length))
         } else if (node.prop === '--width') {
           vars.widths.push(null)
+        }
+      })
+
+      varTypes.push(function (node) {
+        if (node.prop.startsWith('--max-width-')) {
+          vars.maxWidths.push(node.prop.substr('--max-width-'.length))
+        } else if (node.prop === '--max-width') {
+          vars.maxWidths.push(null)
         }
       })
 
@@ -113,6 +122,10 @@ command('css', ({option, parameter}) => {
         .content-box { box-sizing: content-box; }
         .bold { font-weight: bold; }
         .italic { font-style: italic; }
+        .underline { text-decoration: underline; }
+        .nowrap { white-space: nowrap; }
+        .list-style-none { list-style: none; }
+        .overflow-scroll { overflow: scroll; }
         .right { float: right; }
         .left { float: left; }
       `)
@@ -128,6 +141,7 @@ command('css', ({option, parameter}) => {
           .${key} { color: var(--${key}); }
           .background-${key} { background-color: var(--${key}); }
           .border-${key} { border-color: var(--${key}); }
+          .placeholder-${key}::placeholder { color: var(--${key}); }
         `)
       })
 
@@ -233,6 +247,14 @@ command('css', ({option, parameter}) => {
 
           output.push(outdent`
             .${prefix}width${suffix} { width: var(--width${suffix}); }
+          `)
+        })
+
+        vars.maxWidths.forEach(function (width) {
+          const suffix = width != null ? '-' + width : ''
+
+          output.push(outdent`
+            .${prefix}max-width${suffix} { max-width: var(--max-width${suffix}); }
           `)
         })
 
