@@ -22,7 +22,7 @@
   "dependencies": {
     "outdent": "^0.3.0",
     "postcss": "^6.0.4",
-    "sergeant": "^15.4.3",
+    "sergeant": "^15.4.4",
     "thenify": "^3.2.1"
   },
   "devDependencies": {
