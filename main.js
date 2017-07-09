@@ -140,40 +140,31 @@ command('css', ({option, parameter}) => {
         output.push(outdent`
           .${key} { color: var(--${key}); }
           .background-${key} { background-color: var(--${key}); }
-          .border-${key} { border-color: var(--${key}); }
+          .border-${key} {
+            border-top-color: var(--${key});
+            border-right-color: var(--${key});
+            border-bottom-color: var(--${key});
+            border-left-color: var(--${key});
+          }
+
           .placeholder-${key}::placeholder { color: var(--${key}); }
         `)
       })
-
-      output.push(outdent`
-        .border {
-          border-top-style: solid;
-          border-right-style: solid;
-          border-bottom-style: solid;
-          border-left-style: solid;
-        }
-        .border-top { border-top-style: solid; }
-        .border-right { border-right-style: solid; }
-        .border-bottom { border-bottom-style: solid; }
-        .border-left { border-left-style: solid; }
-      `)
 
       vars.borderWidths.forEach(function (border) {
         const suffix = border != null ? '-' + border : ''
 
         output.push(outdent`
-          .border${suffix} { border-width: var(--border-width${suffix}); }
-
           .border${suffix} {
-            border-top-width: var(--border-width${suffix});
-            border-right-width: var(--border-width${suffix});
-            border-bottom-width: var(--border-width${suffix});
-            border-left-width: var(--border-width${suffix});
+            border-top: var(--border-width${suffix}) solid;
+            border-right: var(--border-width${suffix}) solid;
+            border-bottom: var(--border-width${suffix}) solid;
+            border-left: var(--border-width${suffix}) solid;
           }
-          .border-top${suffix} { border-top-width: var(--border-width${suffix}); }
-          .border-right${suffix} { border-right-width: var(--border-width${suffix}); }
-          .border-bottom${suffix} { border-bottom-width: var(--border-width${suffix}); }
-          .border-left${suffix} { border-left-width: var(--border-width${suffix}); }
+          .border-top${suffix} { border-top: var(--border-width${suffix}) solid; }
+          .border-right${suffix} { border-right: var(--border-width${suffix}) solid; }
+          .border-bottom${suffix} { border-bottom: var(--border-width${suffix}) solid; }
+          .border-left${suffix} { border-left: var(--border-width${suffix}) solid; }
         `)
       })
 
