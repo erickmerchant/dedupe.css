@@ -21,7 +21,7 @@
   "homepage": "https://github.com/erickmerchant/css#readme",
   "dependencies": {
     "outdent": "^0.3.0",
-    "postcss": "^6.0.9",
+    "postcss": "^6.0.10",
     "sergeant": "^15.4.9",
     "thenify": "^3.2.1"
   },
