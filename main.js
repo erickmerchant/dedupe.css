@@ -9,6 +9,7 @@ const thenify = require('thenify')
 const fs = require('fs')
 const readFile = thenify(fs.readFile)
 const writeFile = thenify(fs.writeFile)
+const colorRegex = /^((rgb|hsl)a?\([^)]*\)|#[a-f0-9]+|transparent|currentcolor)$/i
 
 command('css', ({option, parameter}) => {
   parameter('input', {
@@ -25,6 +26,9 @@ command('css', ({option, parameter}) => {
     return readFile(args.input, 'utf8').then((input) => {
       const processed = postcss().process(input)
 
+      const settings = {
+        boxSizing: 'inherit'
+      }
       const vars = {
         breakpoints: [],
         colors: [],
@@ -39,12 +43,13 @@ command('css', ({option, parameter}) => {
       const varTypes = []
 
       varTypes.push(function (node) {
-        if (node.value.startsWith('#') ||
-         node.value.startsWith('hsl(') ||
-         node.value.startsWith('hsla(') ||
-         node.value.startsWith('rgb(') ||
-         node.value.startsWith('rgba(')
-       ) {
+        if (node.prop === '--box-sizing') {
+          settings.boxSizing = node.value === 'false' ? false : node.value
+        }
+      })
+
+      varTypes.push(function (node) {
+        if (colorRegex.test(node.value)) {
           vars.colors.push(node.prop.substr(2))
         }
       })
@@ -116,18 +121,33 @@ command('css', ({option, parameter}) => {
 
       output.push(`@import "${varImport}";`)
 
+      if (settings.boxSizing) {
+        output.push(outdent`
+          *, *::before, *::after { box-sizing: ${settings.boxSizing}; }
+        `)
+      }
+
       output.push(outdent`
-        *, *:before, *:after { box-sizing: inherit; }
         .border-box { box-sizing: border-box; }
         .content-box { box-sizing: content-box; }
         .bold { font-weight: bold; }
         .italic { font-style: italic; }
         .underline { text-decoration: underline; }
         .nowrap { white-space: nowrap; }
+        .pre { white-space: pre; }
+        .normal { white-space: normal; }
         .list-style-none { list-style: none; }
         .overflow-scroll { overflow: scroll; }
+        .overflow-hidden { overflow: hidden; }
+        .overflow-auto { overflow: auto; }
+        .overflow-visible { overflow: visible; }
         .right { float: right; }
         .left { float: left; }
+        .clearfix::after {
+          content: "";
+          display: table;
+          clear: both;
+        }
       `)
 
       addBreakpointStyles()
