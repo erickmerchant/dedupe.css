@@ -20,7 +20,7 @@
   },
   "homepage": "https://github.com/erickmerchant/css#readme",
   "dependencies": {
-    "outdent": "^0.3.0",
+    "outdent": "^0.4.1",
     "postcss": "^6.0.12",
     "sergeant": "^15.4.15",
     "thenify": "^3.2.1"
