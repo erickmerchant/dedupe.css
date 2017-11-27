@@ -117,9 +117,6 @@ command('css', ({option, parameter}) => {
       })
 
       const output = []
-      const varImport = './' + path.join(path.relative(path.dirname(args.output), path.dirname(args.input)), path.basename(args.input))
-
-      output.push(`@import "${varImport}";`)
 
       if (settings.boxSizing) {
         output.push(outdent`
@@ -143,11 +140,6 @@ command('css', ({option, parameter}) => {
         .overflow-visible { overflow: visible; }
         .right { float: right; }
         .left { float: left; }
-        .clearfix::after {
-          content: "";
-          display: table;
-          clear: both;
-        }
       `)
 
       addBreakpointStyles()
