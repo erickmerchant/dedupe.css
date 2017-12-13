@@ -4,16 +4,16 @@ _a cli to generate atomic css_
 
 It takes a css file with custom properties and generates a css file full of atomic css classes.
 
-## Install
+## Usage
 
 ```
-npm install -g @erickmerchant/css
+npx @erickmerchant/css -h
 ```
 
 ## Example
 
 ```
-css example/variables.css example/utilities.css
+npx @erickmerchant/css example/variables.css example/utilities.css
 ```
 
 ``` css
