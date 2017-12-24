@@ -4,7 +4,7 @@
 const command = require('sergeant')
 const css = require('./index')
 
-command('css', ({option, parameter}) => {
+command('css', function ({option, parameter}) {
   parameter('input', {
     description: 'what the input css file is named',
     required: true

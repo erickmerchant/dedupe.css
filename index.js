@@ -7,8 +7,8 @@ const readFile = thenify(fs.readFile)
 const writeFile = thenify(fs.writeFile)
 const colorRegex = /^((rgb|hsl)a?\([^)]*\)|#[a-f0-9]+|transparent|currentcolor)$/i
 
-module.exports = (args) => {
-  return readFile(args.input, 'utf8').then((input) => {
+module.exports = function (args) {
+  return readFile(args.input, 'utf8').then(function (input) {
     const processed = postcss().process(input)
 
     const settings = {
@@ -87,7 +87,7 @@ module.exports = (args) => {
       }
     })
 
-    processed.result.root.nodes.forEach((node) => {
+    processed.result.root.nodes.forEach(function (node) {
       if (node.selector === ':root') {
         node.nodes
           .filter((node) => node.type === 'decl')
@@ -129,11 +129,11 @@ module.exports = (args) => {
 
     addBreakpointStyles()
 
-    vars.breakpoints.forEach((key) => {
+    vars.breakpoints.forEach(function (key) {
       addBreakpointStyles(key)
     })
 
-    vars.colors.forEach((key) => {
+    vars.colors.forEach(function (key) {
       output.push(outdent`
         .${key} { color: var(--${key}); }
         .background-${key} { background-color: var(--${key}); }
@@ -175,7 +175,7 @@ module.exports = (args) => {
       `)
     })
 
-    vars.borderRadii.forEach((key) => {
+    vars.borderRadii.forEach(function (key) {
       const suffix = key != null ? '-' + key : ''
 
       output.push(outdent`
@@ -256,7 +256,7 @@ module.exports = (args) => {
         `)
       })
 
-      vars.whitespaces.concat([0, 'auto']).forEach((space) => {
+      vars.whitespaces.concat([0, 'auto']).forEach(function (space) {
         let value = space
         const suffix = space != null ? '-' + space : ''
 
@@ -286,7 +286,7 @@ module.exports = (args) => {
         `)
       })
 
-      vars.whitespaces.concat([0]).forEach((space) => {
+      vars.whitespaces.concat([0]).forEach(function (space) {
         let value = space
         const suffix = space != null ? '-' + space : ''
 
@@ -316,7 +316,7 @@ module.exports = (args) => {
         `)
       })
 
-      vars.fontSizes.forEach((key) => {
+      vars.fontSizes.forEach(function (key) {
         const suffix = key != null ? '-' + key : ''
 
         output.push(outdent`
