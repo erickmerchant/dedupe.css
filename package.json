@@ -1,6 +1,6 @@
 {
   "name": "@erickmerchant/css",
-  "version": "10.3.3",
+  "version": "10.3.4",
   "description": "a cli to generate atomic css",
   "main": "index.js",
   "bin": {
