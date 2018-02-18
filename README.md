@@ -26,10 +26,10 @@ npx @erickmerchant/css example/variables.css example/utilities.css
 :root {
   --box-sizing: false;
 
-  --whitespace-1: 0.5rem;
-  --whitespace-2: 1rem;
-  --whitespace-3: 2rem;
-  --whitespace-4: 4rem;
+  --spacing-1: 0.5rem;
+  --spacing-2: 1rem;
+  --spacing-3: 2rem;
+  --spacing-4: 4rem;
 
   --width-1: calc(100% / 3);
   --width-2: calc(100% / 3 * 2);

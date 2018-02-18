@@ -21,7 +21,7 @@ module.exports = function (args) {
       borderRadii: [],
       widths: [],
       maxWidths: [],
-      whitespaces: [],
+      spacings: [],
       fontSizes: []
     }
 
@@ -72,10 +72,10 @@ module.exports = function (args) {
     })
 
     varTypes.push(function (node) {
-      if (node.prop.startsWith('--whitespace-')) {
-        vars.whitespaces.push(node.prop.substr('--whitespace-'.length))
-      } else if (node.prop === '--whitespace') {
-        vars.whitespaces.push(null)
+      if (node.prop.startsWith('--spacing-')) {
+        vars.spacings.push(node.prop.substr('--spacing-'.length))
+      } else if (node.prop === '--spacing') {
+        vars.spacings.push(null)
       }
     })
 
@@ -256,12 +256,12 @@ module.exports = function (args) {
         `)
       })
 
-      vars.whitespaces.concat([0, 'auto']).forEach(function (space) {
+      vars.spacings.concat([0, 'auto']).forEach(function (space) {
         let value = space
         const suffix = space != null ? '-' + space : ''
 
         if (![0, 'auto'].includes(space)) {
-          value = `var(--whitespace${suffix})`
+          value = `var(--spacing${suffix})`
         }
 
         output.push(outdent`
@@ -286,12 +286,12 @@ module.exports = function (args) {
         `)
       })
 
-      vars.whitespaces.concat([0]).forEach(function (space) {
+      vars.spacings.concat([0]).forEach(function (space) {
         let value = space
         const suffix = space != null ? '-' + space : ''
 
         if (![0].includes(space)) {
-          value = `var(--whitespace${suffix})`
+          value = `var(--spacing${suffix})`
         }
 
         output.push(outdent`
