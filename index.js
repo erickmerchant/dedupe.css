@@ -1,5 +1,4 @@
 const postcss = require('postcss')
-const path = require('path')
 const outdent = require('outdent')
 const thenify = require('thenify')
 const fs = require('fs')
@@ -183,7 +182,7 @@ module.exports = function (args) {
       `)
     })
 
-    return writeFile(path.join(process.cwd(), args.output), output.join('\n'))
+    return writeFile(args.output, output.join('\n'))
 
     function addBreakpointStyles (key) {
       if (key) {
