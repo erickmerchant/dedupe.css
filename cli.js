@@ -3,17 +3,8 @@
 
 const command = require('sergeant')
 const css = require('./index')
+const thenify = require('thenify')
+const fs = require('fs')
+const writeFile = thenify(fs.writeFile)
 
-command('css', function ({option, parameter}) {
-  parameter('input', {
-    description: 'what the input css file is named',
-    required: true
-  })
-
-  parameter('output', {
-    description: 'what the output css file will be named',
-    required: true
-  })
-
-  return css
-})(process.argv.slice(2))
+command('css', css({writeFile}))(process.argv.slice(2))
