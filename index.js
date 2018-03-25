@@ -233,6 +233,7 @@ module.exports = function (deps) {
             .${prefix}self-end { align-self: flex-end; }
             .${prefix}self-center { align-self: center; }
             .${prefix}self-baseline { align-self: baseline; }
+            .${prefix}inline { display: inline; }
             .${prefix}inline-block { display: inline-block; }
             .${prefix}block { display: block; }
             .${prefix}none { display: none; }
