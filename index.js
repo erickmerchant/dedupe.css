@@ -189,7 +189,41 @@ module.exports = function (deps) {
           const suffix = key != null ? '-' + key : ''
 
           output.push(outdent`
-            .border-radius${suffix} { border-radius: var(--border-radius${suffix}); }
+            .border-radius${suffix} {
+              border-top-left-radius: var(--border-radius${suffix});
+              border-top-right-radius: var(--border-radius${suffix});
+              border-bottom-left-radius: var(--border-radius${suffix});
+              border-bottom-right-radius: var(--border-radius${suffix});
+            }
+            .border-left-radius${suffix} {
+              border-top-left-radius: var(--border-radius${suffix});
+              border-bottom-left-radius: var(--border-radius${suffix});
+            }
+            .border-right-radius${suffix} {
+              border-top-right-radius: var(--border-radius${suffix});
+              border-bottom-right-radius: var(--border-radius${suffix});
+            }
+            .border-top-radius${suffix} {
+              border-top-left-radius: var(--border-radius${suffix});
+              border-top-right-radius: var(--border-radius${suffix});
+            }
+            .border-bottom-radius${suffix} {
+              border-bottom-left-radius: var(--border-radius${suffix});
+              border-bottom-right-radius: var(--border-radius${suffix});
+            }
+            .border-top-left-radius${suffix} {
+              border-top-left-radius: var(--border-radius${suffix});
+            }
+            .border-top-right-radius${suffix} {
+              border-top-right-radius: var(--border-radius${suffix});
+
+            }
+            .border-bottom-left-radius${suffix} {
+              border-bottom-left-radius: var(--border-radius${suffix});
+            }
+            .border-bottom-right-radius${suffix} {
+              border-bottom-right-radius: var(--border-radius${suffix});
+            }
           `)
         })
 
