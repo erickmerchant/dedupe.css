@@ -1050,7 +1050,6 @@
 }
 .border-top-right-radius {
   border-top-right-radius: var(--border-radius);
-
 }
 .border-bottom-left-radius {
   border-bottom-left-radius: var(--border-radius);
@@ -1085,7 +1084,6 @@
 }
 .border-top-right-radius-double {
   border-top-right-radius: var(--border-radius-double);
-
 }
 .border-bottom-left-radius-double {
   border-bottom-left-radius: var(--border-radius-double);

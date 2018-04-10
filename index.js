@@ -216,7 +216,6 @@ module.exports = function (deps) {
             }
             .border-top-right-radius${suffix} {
               border-top-right-radius: var(--border-radius${suffix});
-
             }
             .border-bottom-left-radius${suffix} {
               border-bottom-left-radius: var(--border-radius${suffix});
