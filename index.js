@@ -97,11 +97,11 @@ module.exports = function (deps) {
           }
         })
 
-        processed.result.root.nodes.forEach(function (node) {
+        for (let node of processed.result.root.nodes) {
           if (node.selector === ':root') {
-            node.nodes
-              .filter((node) => node.type === 'decl')
-              .forEach((node) => varTypes.forEach((varType) => varType(node)))
+            for (let n of node.nodes.filter((node) => node.type === 'decl')) {
+              for (let varType of varTypes) varType(n)
+            }
           } else if (node.name === 'custom-media') {
             const match = node.params.match(/^--breakpoint-([a-z-]+)/)
 
@@ -109,7 +109,7 @@ module.exports = function (deps) {
               vars.breakpoints.push(match[1])
             }
           }
-        })
+        }
 
         const output = []
 
@@ -139,18 +139,18 @@ module.exports = function (deps) {
 
         addBreakpointStyles()
 
-        vars.breakpoints.forEach(function (key) {
+        for (let key of vars.breakpoints) {
           addBreakpointStyles(key)
-        })
+        }
 
-        vars.colors.forEach(function (key) {
+        for (let key of vars.colors) {
           output.push(outdent`
             .${key} { color: var(--${key}); }
             .background-${key} { background-color: var(--${key}); }
             .placeholder-${key}::placeholder { color: var(--${key}); }
           `)
 
-          vars.borderWidths.forEach(function (border) {
+          for (let border of vars.borderWidths) {
             const suffix = border != null ? '-' + border : ''
 
             output.push(outdent`
@@ -165,10 +165,10 @@ module.exports = function (deps) {
               .border-bottom${suffix}-${key} { border-bottom: var(--border-width${suffix}) solid var(--${key}); }
               .border-left${suffix}-${key} { border-left: var(--border-width${suffix}) solid var(--${key}); }
             `)
-          })
-        })
+          }
+        }
 
-        vars.borderWidths.forEach(function (border) {
+        for (let border of vars.borderWidths) {
           const suffix = border != null ? '-' + border : ''
 
           output.push(outdent`
@@ -183,9 +183,9 @@ module.exports = function (deps) {
             .border-bottom${suffix} { border-bottom: var(--border-width${suffix}) solid currentColor; }
             .border-left${suffix} { border-left: var(--border-width${suffix}) solid currentColor; }
           `)
-        })
+        }
 
-        vars.borderRadii.forEach(function (key) {
+        for (let key of vars.borderRadii) {
           const suffix = key != null ? '-' + key : ''
 
           output.push(outdent`
@@ -224,7 +224,7 @@ module.exports = function (deps) {
               border-bottom-right-radius: var(--border-radius${suffix});
             }
           `)
-        })
+        }
 
         return deps.writeFile(args.output, output.concat('').join('\n'))
 
@@ -284,23 +284,23 @@ module.exports = function (deps) {
             .${prefix}align-right { text-align: right; }
           `)
 
-          vars.widths.forEach(function (width) {
+          for (let width of vars.widths) {
             const suffix = width != null ? '-' + width : ''
 
             output.push(outdent`
               .${prefix}width${suffix} { width: var(--width${suffix}); }
             `)
-          })
+          }
 
-          vars.maxWidths.forEach(function (width) {
+          for (let width of vars.maxWidths) {
             const suffix = width != null ? '-' + width : ''
 
             output.push(outdent`
               .${prefix}max-width${suffix} { max-width: var(--max-width${suffix}); }
             `)
-          })
+          }
 
-          vars.spacings.concat([0, 'auto']).forEach(function (space) {
+          for (let space of vars.spacings.concat([0, 'auto'])) {
             let value = space
             const suffix = space != null ? '-' + space : ''
 
@@ -328,9 +328,9 @@ module.exports = function (deps) {
               .${prefix}margin-bottom${suffix} { margin-bottom: ${value}; }
               .${prefix}margin-left${suffix} { margin-left: ${value}; }
             `)
-          })
+          }
 
-          vars.spacings.concat([0]).forEach(function (space) {
+          for (let space of vars.spacings.concat([0])) {
             let value = space
             const suffix = space != null ? '-' + space : ''
 
@@ -358,15 +358,15 @@ module.exports = function (deps) {
               .${prefix}padding-bottom${suffix} { padding-bottom: ${value}; }
               .${prefix}padding-left${suffix} { padding-left: ${value}; }
             `)
-          })
+          }
 
-          vars.fontSizes.forEach(function (key) {
+          for (let key of vars.fontSizes) {
             const suffix = key != null ? '-' + key : ''
 
             output.push(outdent`
               .${prefix}font-size${suffix} { font-size: var(--font-size${suffix}); }
             `)
-          })
+          }
 
           if (key) {
             output.push('}')
