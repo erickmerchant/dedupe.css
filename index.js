@@ -1,8 +1,8 @@
 const postcss = require('postcss')
 const outdent = require('outdent')
-const thenify = require('thenify')
+const promisify = require('util').promisify
 const fs = require('fs')
-const readFile = thenify(fs.readFile)
+const readFile = promisify(fs.readFile)
 const colorRegex = /^((rgb|hsl)a?\([^)]*\)|#[a-f0-9]+|transparent|currentcolor)$/i
 
 module.exports = function (deps) {

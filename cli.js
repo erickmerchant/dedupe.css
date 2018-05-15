@@ -3,8 +3,8 @@
 
 const command = require('sergeant')
 const css = require('./index')
-const thenify = require('thenify')
+const promisify = require('util').promisify
 const fs = require('fs')
-const writeFile = thenify(fs.writeFile)
+const writeFile = promisify(fs.writeFile)
 
 command('css', css({writeFile}))(process.argv.slice(2))
