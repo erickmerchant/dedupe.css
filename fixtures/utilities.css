@@ -888,9 +888,17 @@
 .desktop-font-size-medium { font-size: var(--font-size-medium); }
 .desktop-font-size-small { font-size: var(--font-size-small); }
 }
-.black { color: var(--black); }
-.background-black { background-color: var(--black); }
-.placeholder-black::placeholder { color: var(--black); }
+.black,
+.placeholder-black::placeholder,
+.hover-black:hover,
+.focus-black:focus {
+  color: var(--black);
+}
+.background-black,
+.hover-background-black:hover,
+.focus-background-black:focus {
+  background-color: var(--black);
+}
 .border-black {
   border-top: var(--border-width) solid var(--black);
   border-right: var(--border-width) solid var(--black);
@@ -911,9 +919,17 @@
 .border-right-double-black { border-right: var(--border-width-double) solid var(--black); }
 .border-bottom-double-black { border-bottom: var(--border-width-double) solid var(--black); }
 .border-left-double-black { border-left: var(--border-width-double) solid var(--black); }
-.dark-gray { color: var(--dark-gray); }
-.background-dark-gray { background-color: var(--dark-gray); }
-.placeholder-dark-gray::placeholder { color: var(--dark-gray); }
+.dark-gray,
+.placeholder-dark-gray::placeholder,
+.hover-dark-gray:hover,
+.focus-dark-gray:focus {
+  color: var(--dark-gray);
+}
+.background-dark-gray,
+.hover-background-dark-gray:hover,
+.focus-background-dark-gray:focus {
+  background-color: var(--dark-gray);
+}
 .border-dark-gray {
   border-top: var(--border-width) solid var(--dark-gray);
   border-right: var(--border-width) solid var(--dark-gray);
@@ -934,9 +950,17 @@
 .border-right-double-dark-gray { border-right: var(--border-width-double) solid var(--dark-gray); }
 .border-bottom-double-dark-gray { border-bottom: var(--border-width-double) solid var(--dark-gray); }
 .border-left-double-dark-gray { border-left: var(--border-width-double) solid var(--dark-gray); }
-.gray { color: var(--gray); }
-.background-gray { background-color: var(--gray); }
-.placeholder-gray::placeholder { color: var(--gray); }
+.gray,
+.placeholder-gray::placeholder,
+.hover-gray:hover,
+.focus-gray:focus {
+  color: var(--gray);
+}
+.background-gray,
+.hover-background-gray:hover,
+.focus-background-gray:focus {
+  background-color: var(--gray);
+}
 .border-gray {
   border-top: var(--border-width) solid var(--gray);
   border-right: var(--border-width) solid var(--gray);
@@ -957,9 +981,17 @@
 .border-right-double-gray { border-right: var(--border-width-double) solid var(--gray); }
 .border-bottom-double-gray { border-bottom: var(--border-width-double) solid var(--gray); }
 .border-left-double-gray { border-left: var(--border-width-double) solid var(--gray); }
-.light-gray { color: var(--light-gray); }
-.background-light-gray { background-color: var(--light-gray); }
-.placeholder-light-gray::placeholder { color: var(--light-gray); }
+.light-gray,
+.placeholder-light-gray::placeholder,
+.hover-light-gray:hover,
+.focus-light-gray:focus {
+  color: var(--light-gray);
+}
+.background-light-gray,
+.hover-background-light-gray:hover,
+.focus-background-light-gray:focus {
+  background-color: var(--light-gray);
+}
 .border-light-gray {
   border-top: var(--border-width) solid var(--light-gray);
   border-right: var(--border-width) solid var(--light-gray);
@@ -980,9 +1012,17 @@
 .border-right-double-light-gray { border-right: var(--border-width-double) solid var(--light-gray); }
 .border-bottom-double-light-gray { border-bottom: var(--border-width-double) solid var(--light-gray); }
 .border-left-double-light-gray { border-left: var(--border-width-double) solid var(--light-gray); }
-.white { color: var(--white); }
-.background-white { background-color: var(--white); }
-.placeholder-white::placeholder { color: var(--white); }
+.white,
+.placeholder-white::placeholder,
+.hover-white:hover,
+.focus-white:focus {
+  color: var(--white);
+}
+.background-white,
+.hover-background-white:hover,
+.focus-background-white:focus {
+  background-color: var(--white);
+}
 .border-white {
   border-top: var(--border-width) solid var(--white);
   border-right: var(--border-width) solid var(--white);

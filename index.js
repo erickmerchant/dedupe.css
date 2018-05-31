@@ -145,9 +145,17 @@ module.exports = function (deps) {
 
         for (let key of vars.colors) {
           output.push(outdent`
-            .${key} { color: var(--${key}); }
-            .background-${key} { background-color: var(--${key}); }
-            .placeholder-${key}::placeholder { color: var(--${key}); }
+            .${key},
+            .placeholder-${key}::placeholder,
+            .hover-${key}:hover,
+            .focus-${key}:focus {
+              color: var(--${key});
+            }
+            .background-${key},
+            .hover-background-${key}:hover,
+            .focus-background-${key}:focus {
+              background-color: var(--${key});
+            }
           `)
 
           for (let border of vars.borderWidths) {
