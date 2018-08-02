@@ -77,10 +77,10 @@ module.exports = function (deps) {
         }
       })
 
-      for (let node of processed.nodes) {
+      for (const node of processed.nodes) {
         if (node.selector === ':root') {
-          for (let n of node.nodes.filter((node) => node.type === 'decl')) {
-            for (let varType of varTypes) varType(n)
+          for (const n of node.nodes.filter((node) => node.type === 'decl')) {
+            for (const varType of varTypes) varType(n)
           }
         } else if (node.name === 'custom-media') {
           const match = node.params.match(/^--breakpoint-([a-z-]+)/)
@@ -118,47 +118,47 @@ module.exports = function (deps) {
 
       addBreakpointStyles()
 
-      for (let key of vars.breakpoints) {
-        addBreakpointStyles(key)
+      for (const breakpoint of vars.breakpoints) {
+        addBreakpointStyles(breakpoint)
       }
 
-      for (let key of vars.colors) {
+      for (const color of vars.colors) {
         output.push(outdent`
-          .${key},
-          .placeholder-${key}::placeholder,
-          .hover-${key}:hover,
-          .active-${key}:active,
-          .focus-${key}:focus {
-            color: var(--${key});
+          .${color},
+          .placeholder-${color}::placeholder,
+          .hover-${color}:hover,
+          .active-${color}:active,
+          .focus-${color}:focus {
+            color: var(--${color});
           }
-          .background-${key},
-          .hover-background-${key}:hover,
-          .active-background-${key}:active,
-          .focus-background-${key}:focus {
-            background-color: var(--${key});
+          .background-${color},
+          .hover-background-${color}:hover,
+          .active-background-${color}:active,
+          .focus-background-${color}:focus {
+            background-color: var(--${color});
           }
         `)
 
-        for (let border of vars.borderWidths) {
-          const suffix = border != null ? '-' + border : ''
+        for (const width of vars.borderWidths) {
+          const suffix = width != null ? '-' + width : ''
 
           output.push(outdent`
-            .border${suffix}-${key} {
-              border-top: var(--border-width${suffix}) solid var(--${key});
-              border-right: var(--border-width${suffix}) solid var(--${key});
-              border-bottom: var(--border-width${suffix}) solid var(--${key});
-              border-left: var(--border-width${suffix}) solid var(--${key});
+            .border${suffix}-${color} {
+              border-top: var(--border-width${suffix}) solid var(--${color});
+              border-right: var(--border-width${suffix}) solid var(--${color});
+              border-bottom: var(--border-width${suffix}) solid var(--${color});
+              border-left: var(--border-width${suffix}) solid var(--${color});
             }
-            .border-top${suffix}-${key} { border-top: var(--border-width${suffix}) solid var(--${key}); }
-            .border-right${suffix}-${key} { border-right: var(--border-width${suffix}) solid var(--${key}); }
-            .border-bottom${suffix}-${key} { border-bottom: var(--border-width${suffix}) solid var(--${key}); }
-            .border-left${suffix}-${key} { border-left: var(--border-width${suffix}) solid var(--${key}); }
+            .border-top${suffix}-${color} { border-top: var(--border-width${suffix}) solid var(--${color}); }
+            .border-right${suffix}-${color} { border-right: var(--border-width${suffix}) solid var(--${color}); }
+            .border-bottom${suffix}-${color} { border-bottom: var(--border-width${suffix}) solid var(--${color}); }
+            .border-left${suffix}-${color} { border-left: var(--border-width${suffix}) solid var(--${color}); }
           `)
         }
       }
 
-      for (let border of vars.borderWidths) {
-        const suffix = border != null ? '-' + border : ''
+      for (const width of vars.borderWidths) {
+        const suffix = width != null ? '-' + width : ''
 
         output.push(outdent`
           .border${suffix} {
@@ -174,8 +174,8 @@ module.exports = function (deps) {
         `)
       }
 
-      for (let key of vars.borderRadii) {
-        const suffix = key != null ? '-' + key : ''
+      for (const radius of vars.borderRadii) {
+        const suffix = radius != null ? '-' + radius : ''
 
         output.push(outdent`
           .border-radius${suffix} {
@@ -217,12 +217,12 @@ module.exports = function (deps) {
 
       return deps.writeFile(args.output, output.concat('').join('\n'))
 
-      function addBreakpointStyles (key) {
-        if (key) {
-          output.push(`@media (--breakpoint-${key}) {`)
+      function addBreakpointStyles (breakpoint) {
+        if (breakpoint) {
+          output.push(`@media (--breakpoint-${breakpoint}) {`)
         }
 
-        let prefix = key ? key + '-' : ''
+        const prefix = breakpoint ? breakpoint + '-' : ''
 
         output.push(outdent`
           .${prefix}grid { display: grid; }
@@ -282,7 +282,7 @@ module.exports = function (deps) {
           .${prefix}auto-flow-column-dense { grid-auto-flow: column dense; }
         `)
 
-        for (let height of vars.heights) {
+        for (const height of vars.heights) {
           const suffix = height != null ? '-' + height : ''
 
           output.push(outdent`
@@ -292,7 +292,7 @@ module.exports = function (deps) {
           `)
         }
 
-        for (let width of vars.widths) {
+        for (const width of vars.widths) {
           const suffix = width != null ? '-' + width : ''
 
           output.push(outdent`
@@ -302,7 +302,7 @@ module.exports = function (deps) {
           `)
         }
 
-        for (let space of vars.spacings) {
+        for (const space of vars.spacings) {
           const suffix = space != null ? '-' + space : ''
           const value = `var(--spacing${suffix})`
 
@@ -328,7 +328,7 @@ module.exports = function (deps) {
           `)
         }
 
-        for (let space of vars.spacings) {
+        for (const space of vars.spacings) {
           const suffix = space != null ? '-' + space : ''
           const value = `var(--spacing${suffix})`
 
@@ -354,7 +354,7 @@ module.exports = function (deps) {
           `)
         }
 
-        for (let space of vars.spacings) {
+        for (const space of vars.spacings) {
           const suffix = space != null ? '-' + space : ''
           const value = `var(--spacing${suffix})`
 
@@ -365,15 +365,15 @@ module.exports = function (deps) {
           `)
         }
 
-        for (let key of vars.fontSizes) {
-          const suffix = key != null ? '-' + key : ''
+        for (const size of vars.fontSizes) {
+          const suffix = size != null ? '-' + size : ''
 
           output.push(outdent`
             .${prefix}font-size${suffix} { font-size: var(--font-size${suffix}); }
           `)
         }
 
-        if (key) {
+        if (breakpoint) {
           output.push('}')
         }
       }
