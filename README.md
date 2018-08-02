@@ -24,31 +24,31 @@ npx @erickmerchant/css example/variables.css example/utilities.css
 @custom-media --breakpoint-desktop (width >= 40rem);
 
 :root {
-  --box-sizing: false;
-
   --spacing-1: 0.5rem;
   --spacing-2: 1rem;
   --spacing-3: 2rem;
   --spacing-4: 4rem;
 
-  --width-1: calc(100% / 3);
-  --width-2: calc(100% / 3 * 2);
+  --width: 50rem;
+  --width-double: 100rem;
+  --height: 50rem;
+  --height-double: 100rem;
 
-  --max-width: 40rem;
-
-  --font-size-large: 1.125rem;
+  --font-size-xx-large: 5rem;
+  --font-size-x-large: 2.5rem;
+  --font-size-large: 1.25rem;
   --font-size-medium: 1rem;
-  --font-size-small: 0.875rem;
+  --font-size-small: 0.8rem;
 
-  --border-radius: 0.2em;
-  --border-width: 0.05em;
+  --border-width: 3px;
+  --border-radius: 3px;
 
-  --black: hsl(0, 0%, 10%);
-  --gray: hsl(0, 0%, 50%);
-  --white: hsl(0, 0%, 90%);
+  --border-width-double: 6px;
+  --border-radius-double: 6px;
 
-  --red: hsl(350, 60%, 60%);
-  --green: hsl(110, 60%, 60%);
-  --blue: hsl(230, 60%, 60%);
+  --blue: hsl(200, 100%, 50%);
+  --gray: gray(50);
+  --orange: rgb(255, 125, 0);
+  --pink: #FF0080;
 }
 ```
