@@ -3,34 +3,25 @@ const outdent = require('outdent')
 const promisify = require('util').promisify
 const fs = require('fs')
 const readFile = promisify(fs.readFile)
-const colorRegex = /^((rgb|hsl)a?\([^)]*\)|#[a-f0-9]+|transparent|currentcolor)$/i
+const colorRegex = /^((rgb|hsl)a?\([^)]*\)|#[a-f0-9]+|transparent|currentcolor|color-mod\(.*|gray\(.*)$/i
 
 module.exports = function (deps) {
   return function (args) {
     return readFile(args.input, 'utf8').then(function (input) {
-      const processed = postcss().process(input)
+      const processed = postcss.parse(input)
 
-      const settings = {
-        boxSizing: 'inherit'
-      }
       const vars = {
         breakpoints: [],
         colors: [],
         borderWidths: [],
         borderRadii: [],
         widths: [],
-        maxWidths: [],
+        heights: [],
         spacings: [],
         fontSizes: []
       }
 
       const varTypes = []
-
-      varTypes.push(function (node) {
-        if (node.prop === '--box-sizing') {
-          settings.boxSizing = node.value === 'false' ? false : node.value
-        }
-      })
 
       varTypes.push(function (node) {
         if (colorRegex.test(node.value)) {
@@ -63,10 +54,10 @@ module.exports = function (deps) {
       })
 
       varTypes.push(function (node) {
-        if (node.prop.startsWith('--max-width-')) {
-          vars.maxWidths.push(node.prop.substr('--max-width-'.length))
-        } else if (node.prop === '--max-width') {
-          vars.maxWidths.push(null)
+        if (node.prop.startsWith('--height-')) {
+          vars.heights.push(node.prop.substr('--height-'.length))
+        } else if (node.prop === '--height') {
+          vars.heights.push(null)
         }
       })
 
@@ -86,7 +77,7 @@ module.exports = function (deps) {
         }
       })
 
-      for (let node of processed.result.root.nodes) {
+      for (let node of processed.nodes) {
         if (node.selector === ':root') {
           for (let n of node.nodes.filter((node) => node.type === 'decl')) {
             for (let varType of varTypes) varType(n)
@@ -102,13 +93,8 @@ module.exports = function (deps) {
 
       const output = []
 
-      if (settings.boxSizing) {
-        output.push(outdent`
-          *, *::before, *::after { box-sizing: ${settings.boxSizing}; }
-        `)
-      }
-
       output.push(outdent`
+        *, *::before, *::after { box-sizing: inherit; }
         .border-box { box-sizing: border-box; }
         .content-box { box-sizing: content-box; }
         .bold { font-weight: bold; }
@@ -121,6 +107,10 @@ module.exports = function (deps) {
         .overflow-scroll { overflow: scroll; }
         .overflow-hidden { overflow: hidden; }
         .overflow-auto { overflow: auto; }
+        .overflow-x-scroll { overflow-x: scroll; }
+        .overflow-x-auto { overflow-x: auto; }
+        .overflow-y-scroll { overflow-y: scroll; }
+        .overflow-y-auto { overflow-y: auto; }
         .overflow-visible { overflow: visible; }
         .right { float: right; }
         .left { float: left; }
@@ -137,11 +127,13 @@ module.exports = function (deps) {
           .${key},
           .placeholder-${key}::placeholder,
           .hover-${key}:hover,
+          .active-${key}:active,
           .focus-${key}:focus {
             color: var(--${key});
           }
           .background-${key},
           .hover-background-${key}:hover,
+          .active-background-${key}:active,
           .focus-background-${key}:focus {
             background-color: var(--${key});
           }
@@ -233,9 +225,12 @@ module.exports = function (deps) {
         let prefix = key ? key + '-' : ''
 
         output.push(outdent`
-          .${prefix}flex { display: flex;  }
-          .${prefix}inline-flex { display: inline-flex;  }
-          .${prefix}auto { flex: 1 1 auto;  }
+          .${prefix}grid { display: grid; }
+          .${prefix}flex { display: flex; }
+          .${prefix}inline-flex { display: inline-flex; }
+          .${prefix}flex-auto { flex: auto; }
+          .${prefix}flex-initial { flex: initial; }
+          .${prefix}flex-none { flex: none; }
           .${prefix}row { flex-direction: row; }
           .${prefix}row-reverse { flex-direction: row-reverse; }
           .${prefix}column { flex-direction: column; }
@@ -244,6 +239,7 @@ module.exports = function (deps) {
           .${prefix}wrap-reverse { flex-wrap: wrap-reverse; }
           .${prefix}justify-around { justify-content: space-around; }
           .${prefix}justify-between { justify-content: space-between; }
+          .${prefix}justify-evenly { justify-content: space-evenly; }
           .${prefix}justify-start { justify-content: flex-start; }
           .${prefix}justify-end { justify-content: flex-end; }
           .${prefix}justify-center { justify-content: center; }
@@ -269,41 +265,46 @@ module.exports = function (deps) {
           .${prefix}none { display: none; }
           .${prefix}relative { position: relative; }
           .${prefix}absolute { position: absolute; }
+          .${prefix}static { position: static; }
           .${prefix}fixed { position: fixed; }
+          .${prefix}sticky { position: sticky; }
           .${prefix}top-0 { top: 0; }
           .${prefix}right-0 { right: 0; }
           .${prefix}bottom-0 { bottom: 0; }
           .${prefix}left-0 { left: 0; }
-          .${prefix}fit-width { max-width: 100%; }
-          .${prefix}full-width { width: 100%; }
           .${prefix}align-center { text-align: center; }
           .${prefix}align-left { text-align: left; }
           .${prefix}align-right { text-align: right; }
+          .${prefix}auto-flow-row { grid-auto-flow: row; }
+          .${prefix}auto-flow-column { grid-auto-flow: column; }
+          .${prefix}auto-flow-dense { grid-auto-flow: dense; }
+          .${prefix}auto-flow-row-dense { grid-auto-flow: row dense; }
+          .${prefix}auto-flow-column-dense { grid-auto-flow: column dense; }
         `)
+
+        for (let height of vars.heights) {
+          const suffix = height != null ? '-' + height : ''
+
+          output.push(outdent`
+            .${prefix}height${suffix} { height: var(--height${suffix}); }
+            .${prefix}min-height${suffix} { min-height: var(--height${suffix}); }
+            .${prefix}max-height${suffix} { max-height: var(--height${suffix}); }
+          `)
+        }
 
         for (let width of vars.widths) {
           const suffix = width != null ? '-' + width : ''
 
           output.push(outdent`
             .${prefix}width${suffix} { width: var(--width${suffix}); }
+            .${prefix}min-width${suffix} { min-width: var(--width${suffix}); }
+            .${prefix}max-width${suffix} { max-width: var(--width${suffix}); }
           `)
         }
 
-        for (let width of vars.maxWidths) {
-          const suffix = width != null ? '-' + width : ''
-
-          output.push(outdent`
-            .${prefix}max-width${suffix} { max-width: var(--max-width${suffix}); }
-          `)
-        }
-
-        for (let space of vars.spacings.concat([0, 'auto'])) {
-          let value = space
+        for (let space of vars.spacings) {
           const suffix = space != null ? '-' + space : ''
-
-          if (![0, 'auto'].includes(space)) {
-            value = `var(--spacing${suffix})`
-          }
+          const value = `var(--spacing${suffix})`
 
           output.push(outdent`
             .${prefix}margin${suffix} {
@@ -312,11 +313,11 @@ module.exports = function (deps) {
               margin-bottom: ${value};
               margin-left: ${value};
             }
-            .${prefix}margin-horizontal${suffix} {
+            .${prefix}margin-x${suffix} {
               margin-right: ${value};
               margin-left: ${value};
             }
-            .${prefix}margin-vertical${suffix} {
+            .${prefix}margin-y${suffix} {
               margin-top: ${value};
               margin-bottom: ${value};
             }
@@ -327,13 +328,9 @@ module.exports = function (deps) {
           `)
         }
 
-        for (let space of vars.spacings.concat([0])) {
-          let value = space
+        for (let space of vars.spacings) {
           const suffix = space != null ? '-' + space : ''
-
-          if (![0].includes(space)) {
-            value = `var(--spacing${suffix})`
-          }
+          const value = `var(--spacing${suffix})`
 
           output.push(outdent`
             .${prefix}padding${suffix} {
@@ -342,11 +339,11 @@ module.exports = function (deps) {
               padding-bottom: ${value};
               padding-left: ${value};
             }
-            .${prefix}padding-horizontal${suffix} {
+            .${prefix}padding-x${suffix} {
               padding-right: ${value};
               padding-left: ${value};
             }
-            .${prefix}padding-vertical${suffix} {
+            .${prefix}padding-y${suffix} {
               padding-top: ${value};
               padding-bottom: ${value};
             }
@@ -354,6 +351,17 @@ module.exports = function (deps) {
             .${prefix}padding-right${suffix} { padding-right: ${value}; }
             .${prefix}padding-bottom${suffix} { padding-bottom: ${value}; }
             .${prefix}padding-left${suffix} { padding-left: ${value}; }
+          `)
+        }
+
+        for (let space of vars.spacings) {
+          const suffix = space != null ? '-' + space : ''
+          const value = `var(--spacing${suffix})`
+
+          output.push(outdent`
+            .${prefix}gap${suffix} { grid-gap: ${value}; }
+            .${prefix}row-gap${suffix} { grid-row-gap: ${value}; }
+            .${prefix}column-gap${suffix} { grid-column-gap: ${value}; }
           `)
         }
 

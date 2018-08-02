@@ -1,20 +1,17 @@
 @custom-media --breakpoint-mobile (width < 40rem);
-
 @custom-media --breakpoint-desktop (width >= 40rem);
 
 :root {
-  --box-sizing: border-box;
-
   --spacing: 0.5rem;
   --spacing-1: 0.5rem;
   --spacing-2: 1rem;
   --spacing-3: 2rem;
   --spacing-4: 4rem;
 
-  --max-width: 50rem;
   --width: 50rem;
-  --max-width-double: 100rem;
   --width-double: 100rem;
+  --height: 50rem;
+  --height-double: 100rem;
 
   --font-size: 1rem;
   --font-size-xx-large: 5rem;
@@ -29,9 +26,8 @@
   --border-width-double: 6px;
   --border-radius-double: 6px;
 
-  --black: hsl(0, 0%, 5%);
-  --dark-gray: hsl(0, 0%, 25%);
-  --gray: hsl(0, 0%, 50%);
-  --light-gray: hsl(0, 0%, 75%);
-  --white: hsl(0, 0%, 95%);
+  --blue: hsl(200, 100%, 50%);
+  --gray: gray(50);
+  --orange: rgb(255, 125, 0);
+  --pink: #FF0080;
 }
