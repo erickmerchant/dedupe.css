@@ -24,10 +24,14 @@ npx @erickmerchant/css example/variables.css example/utilities.css
 @custom-media --breakpoint-desktop (width >= 40rem);
 
 :root {
-  --spacing-1: 0.5rem;
-  --spacing-2: 1rem;
-  --spacing-3: 2rem;
-  --spacing-4: 4rem;
+  --padding-1: 0.5rem;
+  --padding-2: 1rem;
+
+  --margin-1: 0.5rem;
+  --margin-2: 1rem;
+
+  --gap-1: 0.5rem;
+  --gap-2: 1rem;
 
   --width: 50rem;
   --width-double: 100rem;

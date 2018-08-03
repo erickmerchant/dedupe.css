@@ -17,7 +17,9 @@ module.exports = function (deps) {
         borderRadii: [],
         widths: [],
         heights: [],
-        spacings: [],
+        paddings: [],
+        margins: [],
+        gaps: [],
         fontSizes: []
       }
 
@@ -62,10 +64,26 @@ module.exports = function (deps) {
       })
 
       varTypes.push(function (node) {
-        if (node.prop.startsWith('--spacing-')) {
-          vars.spacings.push(node.prop.substr('--spacing-'.length))
-        } else if (node.prop === '--spacing') {
-          vars.spacings.push(null)
+        if (node.prop.startsWith('--padding-')) {
+          vars.paddings.push(node.prop.substr('--padding-'.length))
+        } else if (node.prop === '--padding') {
+          vars.paddings.push(null)
+        }
+      })
+
+      varTypes.push(function (node) {
+        if (node.prop.startsWith('--margin-')) {
+          vars.margins.push(node.prop.substr('--margin-'.length))
+        } else if (node.prop === '--margin') {
+          vars.margins.push(null)
+        }
+      })
+
+      varTypes.push(function (node) {
+        if (node.prop.startsWith('--gap-')) {
+          vars.gaps.push(node.prop.substr('--gap-'.length))
+        } else if (node.prop === '--gap') {
+          vars.gaps.push(null)
         }
       })
 
@@ -302,9 +320,9 @@ module.exports = function (deps) {
           `)
         }
 
-        for (const space of vars.spacings) {
+        for (const space of vars.margins) {
           const suffix = space != null ? '-' + space : ''
-          const value = `var(--spacing${suffix})`
+          const value = `var(--margin${suffix})`
 
           output.push(outdent`
             .${prefix}margin${suffix} {
@@ -328,9 +346,18 @@ module.exports = function (deps) {
           `)
         }
 
-        for (const space of vars.spacings) {
+        output.push(outdent`
+          .${prefix}margin-x-auto {
+            margin-right: auto;
+            margin-left: auto;
+          }
+          .${prefix}margin-right-auto { margin-right: auto; }
+          .${prefix}margin-left-auto { margin-left: auto; }
+        `)
+
+        for (const space of vars.paddings) {
           const suffix = space != null ? '-' + space : ''
-          const value = `var(--spacing${suffix})`
+          const value = `var(--padding${suffix})`
 
           output.push(outdent`
             .${prefix}padding${suffix} {
@@ -354,9 +381,9 @@ module.exports = function (deps) {
           `)
         }
 
-        for (const space of vars.spacings) {
+        for (const space of vars.gaps) {
           const suffix = space != null ? '-' + space : ''
-          const value = `var(--spacing${suffix})`
+          const value = `var(--gap${suffix})`
 
           output.push(outdent`
             .${prefix}gap${suffix} { grid-gap: ${value}; }
