@@ -19,36 +19,31 @@ npx @erickmerchant/css example/variables.css example/utilities.css
 ``` css
 /* example/variables.css */
 
-@custom-media --breakpoint-mobile (width < 40rem);
-
 @custom-media --breakpoint-desktop (width >= 40rem);
 
 :root {
-  --padding-1: 0.5rem;
-  --padding-2: 1rem;
+  --padding: 0.5rem;
+  --padding-more: 1rem;
 
-  --margin-1: 0.5rem;
-  --margin-2: 1rem;
+  --margin: 0.5rem;
+  --margin-more: 1rem;
 
-  --gap-1: 0.5rem;
-  --gap-2: 1rem;
+  --gap: 0.5rem;
+  --gap-more: 1rem;
 
   --width: 50rem;
-  --width-double: 100rem;
+  --width-more: 100rem;
   --height: 50rem;
-  --height-double: 100rem;
+  --height-more: 100rem;
 
-  --font-size-xx-large: 5rem;
-  --font-size-x-large: 2.5rem;
-  --font-size-large: 1.25rem;
-  --font-size-medium: 1rem;
-  --font-size-small: 0.8rem;
+  --font-size: 16px;
+  --font-size-more: 32px;
 
   --border-width: 3px;
-  --border-radius: 3px;
+  --border-width-more: 6px;
 
-  --border-width-double: 6px;
-  --border-radius-double: 6px;
+  --border-radius: 3px;
+  --border-radius-more: 6px;
 
   --blue: hsl(200, 100%, 50%);
   --gray: gray(50);
