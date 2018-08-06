@@ -132,6 +132,16 @@ module.exports = function (deps) {
         .overflow-visible { overflow: visible; }
         .right { float: right; }
         .left { float: left; }
+        .border-solid {
+          border-top-style: solid;
+          border-right-style: solid;
+          border-bottom-style: solid;
+          border-left-style: solid;
+        }
+        .border-top-solid { border-top-style: solid; }
+        .border-right-solid { border-right-style: solid; }
+        .border-bottom-solid { border-bottom-style: solid; }
+        .border-left-solid { border-left-style: solid; }
       `)
 
       addBreakpointStyles()
@@ -157,22 +167,18 @@ module.exports = function (deps) {
           }
         `)
 
-        for (const width of vars.borderWidths) {
-          const suffix = width != null ? '-' + width : ''
-
-          output.push(outdent`
-            .border${suffix}-${color} {
-              border-top: var(--border-width${suffix}) solid var(--${color});
-              border-right: var(--border-width${suffix}) solid var(--${color});
-              border-bottom: var(--border-width${suffix}) solid var(--${color});
-              border-left: var(--border-width${suffix}) solid var(--${color});
-            }
-            .border-top${suffix}-${color} { border-top: var(--border-width${suffix}) solid var(--${color}); }
-            .border-right${suffix}-${color} { border-right: var(--border-width${suffix}) solid var(--${color}); }
-            .border-bottom${suffix}-${color} { border-bottom: var(--border-width${suffix}) solid var(--${color}); }
-            .border-left${suffix}-${color} { border-left: var(--border-width${suffix}) solid var(--${color}); }
-          `)
-        }
+        output.push(outdent`
+          .border-${color} {
+            border-top-color: var(--${color});
+            border-right-color: var(--${color});
+            border-bottom-color: var(--${color});
+            border-left-color: var(--${color});
+          }
+          .border-top-${color} { border-top-color: var(--${color}); }
+          .border-right-${color} { border-right-color: var(--${color}); }
+          .border-bottom-${color} { border-bottom-color: var(--${color}); }
+          .border-left-${color} { border-left-color: var(--${color}); }
+        `)
       }
 
       for (const width of vars.borderWidths) {
@@ -180,15 +186,15 @@ module.exports = function (deps) {
 
         output.push(outdent`
           .border${suffix} {
-            border-top: var(--border-width${suffix}) solid currentColor;
-            border-right: var(--border-width${suffix}) solid currentColor;
-            border-bottom: var(--border-width${suffix}) solid currentColor;
-            border-left: var(--border-width${suffix}) solid currentColor;
+            border-top-width: var(--border-width${suffix});
+            border-right-width: var(--border-width${suffix});
+            border-bottom-width: var(--border-width${suffix});
+            border-left-width: var(--border-width${suffix});
           }
-          .border-top${suffix} { border-top: var(--border-width${suffix}) solid currentColor; }
-          .border-right${suffix} { border-right: var(--border-width${suffix}) solid currentColor; }
-          .border-bottom${suffix} { border-bottom: var(--border-width${suffix}) solid currentColor; }
-          .border-left${suffix} { border-left: var(--border-width${suffix}) solid currentColor; }
+          .border-top${suffix} { border-top-width: var(--border-width${suffix}); }
+          .border-right${suffix} { border-right-width: var(--border-width${suffix}); }
+          .border-bottom${suffix} { border-bottom-width: var(--border-width${suffix}); }
+          .border-left${suffix} { border-left-width: var(--border-width${suffix}); }
         `)
       }
 
