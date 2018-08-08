@@ -138,6 +138,14 @@ module.exports = function (deps) {
           border-bottom-style: solid;
           border-left-style: solid;
         }
+        .border-x-solid {
+          border-right-style: solid;
+          border-left-style: solid;
+        }
+        .border-y-solid {
+          border-top-style: solid;
+          border-bottom-style: solid;
+        }
         .border-top-solid { border-top-style: solid; }
         .border-right-solid { border-right-style: solid; }
         .border-bottom-solid { border-bottom-style: solid; }
@@ -174,6 +182,14 @@ module.exports = function (deps) {
             border-bottom-color: var(--${color});
             border-left-color: var(--${color});
           }
+          .border-x-${color} {
+            border-right-color: var(--${color});
+            border-left-color: var(--${color});
+          }
+          .border-y-${color} {
+            border-top-color: var(--${color});
+            border-bottom-color: var(--${color});
+          }
           .border-top-${color} { border-top-color: var(--${color}); }
           .border-right-${color} { border-right-color: var(--${color}); }
           .border-bottom-${color} { border-bottom-color: var(--${color}); }
@@ -190,6 +206,14 @@ module.exports = function (deps) {
             border-right-width: var(--border-width${suffix});
             border-bottom-width: var(--border-width${suffix});
             border-left-width: var(--border-width${suffix});
+          }
+          .border-x${suffix} {
+            border-right-width: var(--border-width${suffix});
+            border-left-width: var(--border-width${suffix});
+          }
+          .border-y${suffix} {
+            border-top-width: var(--border-width${suffix});
+            border-bottom-width: var(--border-width${suffix});
           }
           .border-top${suffix} { border-top-width: var(--border-width${suffix}); }
           .border-right${suffix} { border-right-width: var(--border-width${suffix}); }
