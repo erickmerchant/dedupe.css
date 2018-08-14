@@ -133,10 +133,7 @@ module.exports = function (deps) {
         .right { float: right; }
         .left { float: left; }
         .border-solid {
-          border-top-style: solid;
-          border-right-style: solid;
-          border-bottom-style: solid;
-          border-left-style: solid;
+          border-style: solid;
         }
         .border-x-solid {
           border-right-style: solid;
@@ -177,10 +174,7 @@ module.exports = function (deps) {
 
         output.push(outdent`
           .border-${color} {
-            border-top-color: var(--${color});
-            border-right-color: var(--${color});
-            border-bottom-color: var(--${color});
-            border-left-color: var(--${color});
+            border-color: var(--${color});
           }
           .border-x-${color} {
             border-right-color: var(--${color});
@@ -202,10 +196,7 @@ module.exports = function (deps) {
 
         output.push(outdent`
           .border${suffix} {
-            border-top-width: var(--border-width${suffix});
-            border-right-width: var(--border-width${suffix});
-            border-bottom-width: var(--border-width${suffix});
-            border-left-width: var(--border-width${suffix});
+            border-width: var(--border-width${suffix});
           }
           .border-x${suffix} {
             border-right-width: var(--border-width${suffix});
@@ -227,10 +218,7 @@ module.exports = function (deps) {
 
         output.push(outdent`
           .border-radius${suffix} {
-            border-top-left-radius: var(--border-radius${suffix});
-            border-top-right-radius: var(--border-radius${suffix});
-            border-bottom-left-radius: var(--border-radius${suffix});
-            border-bottom-right-radius: var(--border-radius${suffix});
+            border-radius: var(--border-radius${suffix});
           }
           .border-left-radius${suffix} {
             border-top-left-radius: var(--border-radius${suffix});
@@ -356,10 +344,7 @@ module.exports = function (deps) {
 
           output.push(outdent`
             .${prefix}margin${suffix} {
-              margin-top: ${value};
-              margin-right: ${value};
-              margin-bottom: ${value};
-              margin-left: ${value};
+              margin: ${value};
             }
             .${prefix}margin-x${suffix} {
               margin-right: ${value};
@@ -391,10 +376,7 @@ module.exports = function (deps) {
 
           output.push(outdent`
             .${prefix}padding${suffix} {
-              padding-top: ${value};
-              padding-right: ${value};
-              padding-bottom: ${value};
-              padding-left: ${value};
+              padding: ${value};
             }
             .${prefix}padding-x${suffix} {
               padding-right: ${value};

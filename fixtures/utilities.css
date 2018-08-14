@@ -19,10 +19,7 @@
 .right { float: right; }
 .left { float: left; }
 .border-solid {
-  border-top-style: solid;
-  border-right-style: solid;
-  border-bottom-style: solid;
-  border-left-style: solid;
+  border-style: solid;
 }
 .border-x-solid {
   border-right-style: solid;
@@ -104,10 +101,7 @@
 .min-width-more { min-width: var(--width-more); }
 .max-width-more { max-width: var(--width-more); }
 .margin {
-  margin-top: var(--margin);
-  margin-right: var(--margin);
-  margin-bottom: var(--margin);
-  margin-left: var(--margin);
+  margin: var(--margin);
 }
 .margin-x {
   margin-right: var(--margin);
@@ -122,10 +116,7 @@
 .margin-bottom { margin-bottom: var(--margin); }
 .margin-left { margin-left: var(--margin); }
 .margin-more {
-  margin-top: var(--margin-more);
-  margin-right: var(--margin-more);
-  margin-bottom: var(--margin-more);
-  margin-left: var(--margin-more);
+  margin: var(--margin-more);
 }
 .margin-x-more {
   margin-right: var(--margin-more);
@@ -146,10 +137,7 @@
 .margin-right-auto { margin-right: auto; }
 .margin-left-auto { margin-left: auto; }
 .padding {
-  padding-top: var(--padding);
-  padding-right: var(--padding);
-  padding-bottom: var(--padding);
-  padding-left: var(--padding);
+  padding: var(--padding);
 }
 .padding-x {
   padding-right: var(--padding);
@@ -164,10 +152,7 @@
 .padding-bottom { padding-bottom: var(--padding); }
 .padding-left { padding-left: var(--padding); }
 .padding-more {
-  padding-top: var(--padding-more);
-  padding-right: var(--padding-more);
-  padding-bottom: var(--padding-more);
-  padding-left: var(--padding-more);
+  padding: var(--padding-more);
 }
 .padding-x-more {
   padding-right: var(--padding-more);
@@ -258,10 +243,7 @@
 .desktop-min-width-more { min-width: var(--width-more); }
 .desktop-max-width-more { max-width: var(--width-more); }
 .desktop-margin {
-  margin-top: var(--margin);
-  margin-right: var(--margin);
-  margin-bottom: var(--margin);
-  margin-left: var(--margin);
+  margin: var(--margin);
 }
 .desktop-margin-x {
   margin-right: var(--margin);
@@ -276,10 +258,7 @@
 .desktop-margin-bottom { margin-bottom: var(--margin); }
 .desktop-margin-left { margin-left: var(--margin); }
 .desktop-margin-more {
-  margin-top: var(--margin-more);
-  margin-right: var(--margin-more);
-  margin-bottom: var(--margin-more);
-  margin-left: var(--margin-more);
+  margin: var(--margin-more);
 }
 .desktop-margin-x-more {
   margin-right: var(--margin-more);
@@ -300,10 +279,7 @@
 .desktop-margin-right-auto { margin-right: auto; }
 .desktop-margin-left-auto { margin-left: auto; }
 .desktop-padding {
-  padding-top: var(--padding);
-  padding-right: var(--padding);
-  padding-bottom: var(--padding);
-  padding-left: var(--padding);
+  padding: var(--padding);
 }
 .desktop-padding-x {
   padding-right: var(--padding);
@@ -318,10 +294,7 @@
 .desktop-padding-bottom { padding-bottom: var(--padding); }
 .desktop-padding-left { padding-left: var(--padding); }
 .desktop-padding-more {
-  padding-top: var(--padding-more);
-  padding-right: var(--padding-more);
-  padding-bottom: var(--padding-more);
-  padding-left: var(--padding-more);
+  padding: var(--padding-more);
 }
 .desktop-padding-x-more {
   padding-right: var(--padding-more);
@@ -358,10 +331,7 @@
   background-color: var(--blue);
 }
 .border-blue {
-  border-top-color: var(--blue);
-  border-right-color: var(--blue);
-  border-bottom-color: var(--blue);
-  border-left-color: var(--blue);
+  border-color: var(--blue);
 }
 .border-x-blue {
   border-right-color: var(--blue);
@@ -389,10 +359,7 @@
   background-color: var(--gray);
 }
 .border-gray {
-  border-top-color: var(--gray);
-  border-right-color: var(--gray);
-  border-bottom-color: var(--gray);
-  border-left-color: var(--gray);
+  border-color: var(--gray);
 }
 .border-x-gray {
   border-right-color: var(--gray);
@@ -420,10 +387,7 @@
   background-color: var(--orange);
 }
 .border-orange {
-  border-top-color: var(--orange);
-  border-right-color: var(--orange);
-  border-bottom-color: var(--orange);
-  border-left-color: var(--orange);
+  border-color: var(--orange);
 }
 .border-x-orange {
   border-right-color: var(--orange);
@@ -451,10 +415,7 @@
   background-color: var(--pink);
 }
 .border-pink {
-  border-top-color: var(--pink);
-  border-right-color: var(--pink);
-  border-bottom-color: var(--pink);
-  border-left-color: var(--pink);
+  border-color: var(--pink);
 }
 .border-x-pink {
   border-right-color: var(--pink);
@@ -469,10 +430,7 @@
 .border-bottom-pink { border-bottom-color: var(--pink); }
 .border-left-pink { border-left-color: var(--pink); }
 .border {
-  border-top-width: var(--border-width);
-  border-right-width: var(--border-width);
-  border-bottom-width: var(--border-width);
-  border-left-width: var(--border-width);
+  border-width: var(--border-width);
 }
 .border-x {
   border-right-width: var(--border-width);
@@ -487,10 +445,7 @@
 .border-bottom { border-bottom-width: var(--border-width); }
 .border-left { border-left-width: var(--border-width); }
 .border-more {
-  border-top-width: var(--border-width-more);
-  border-right-width: var(--border-width-more);
-  border-bottom-width: var(--border-width-more);
-  border-left-width: var(--border-width-more);
+  border-width: var(--border-width-more);
 }
 .border-x-more {
   border-right-width: var(--border-width-more);
@@ -505,10 +460,7 @@
 .border-bottom-more { border-bottom-width: var(--border-width-more); }
 .border-left-more { border-left-width: var(--border-width-more); }
 .border-radius {
-  border-top-left-radius: var(--border-radius);
-  border-top-right-radius: var(--border-radius);
-  border-bottom-left-radius: var(--border-radius);
-  border-bottom-right-radius: var(--border-radius);
+  border-radius: var(--border-radius);
 }
 .border-left-radius {
   border-top-left-radius: var(--border-radius);
@@ -539,10 +491,7 @@
   border-bottom-right-radius: var(--border-radius);
 }
 .border-radius-more {
-  border-top-left-radius: var(--border-radius-more);
-  border-top-right-radius: var(--border-radius-more);
-  border-bottom-left-radius: var(--border-radius-more);
-  border-bottom-right-radius: var(--border-radius-more);
+  border-radius: var(--border-radius-more);
 }
 .border-left-radius-more {
   border-top-left-radius: var(--border-radius-more);
