@@ -7,7 +7,7 @@ const promisify = require('util').promisify
 const fs = require('fs')
 const writeFile = promisify(fs.writeFile)
 
-command('css', ({option, parameter}) => {
+command('css', ({ option, parameter }) => {
   parameter('input', {
     description: 'what the input css file is named',
     required: true
@@ -18,5 +18,5 @@ command('css', ({option, parameter}) => {
     required: true
   })
 
-  return (args) => css({writeFile})(args)
+  return (args) => css({ writeFile })(args)
 })(process.argv.slice(2))
