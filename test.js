@@ -3,12 +3,12 @@ const execa = require('execa')
 const promisify = require('util').promisify
 const readFile = promisify(require('fs').readFile)
 
-test('index.js - functionality', async function (t) {
+test('index.js - functionality', async (t) => {
   t.plan(3)
 
   const expected = await readFile('./fixtures/utilities.css', 'utf-8')
 
-  require('./index')({
+  await require('./index')({
     writeFile (file, content) {
       t.equals(file, './fixtures/utilities.css')
       t.equals(content, expected)
@@ -17,12 +17,11 @@ test('index.js - functionality', async function (t) {
     input: './fixtures/variables.css',
     output: './fixtures/utilities.css'
   })
-    .then(function () {
-      t.ok(1)
-    })
+
+  t.ok(1)
 })
 
-test('cli.js', async function (t) {
+test('cli.js', async (t) => {
   t.plan(3)
 
   try {
