@@ -22,7 +22,8 @@
   "dependencies": {
     "outdent": "^0.7.0",
     "postcss": "^7.0.4",
-    "sergeant": "^22.1.0"
+    "sergeant": "^22.1.1",
+    "stream-to-promise": "^2.2.0"
   },
   "devDependencies": {
     "@erickmerchant/tasks": "^0.2.0",

@@ -3,9 +3,8 @@
 
 const command = require('sergeant')
 const css = require('./index')
-const promisify = require('util').promisify
-const fs = require('fs')
-const writeFile = promisify(fs.writeFile)
+const createWriteStream = require('fs').createWriteStream
+const streamPromise = require('stream-to-promise')
 
 command('css', ({ option, parameter }) => {
   parameter('input', {
@@ -18,5 +17,9 @@ command('css', ({ option, parameter }) => {
     required: true
   })
 
-  return (args) => css({ writeFile })(args)
+  return (args) => css({
+    writeFile () {
+      return streamPromise(createWriteStream(...arguments))
+    }
+  })(args)
 })(process.argv.slice(2))
