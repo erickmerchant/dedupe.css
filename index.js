@@ -2,7 +2,7 @@ const postcss = require('postcss')
 const outdent = require('outdent')
 const createReadStream = require('fs').createReadStream
 const streamPromise = require('stream-to-promise')
-const colorRegex = /^((rgb|hsl)a?\([^)]*\)|#[a-f0-9]+|transparent|currentcolor|color-mod\(.*|gray\(.*)$/i
+const colorRegex = /^((rgb|hsl)a?\([^)]*\)|#[a-f0-9]+|transparent|currentcolor|gray\(.*)$/i
 
 module.exports = (deps) => async (args) => {
   const input = await streamPromise(createReadStream(args.input, 'utf8'))
