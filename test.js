@@ -1,25 +1,5 @@
 const test = require('tape')
 const execa = require('execa')
-const promisify = require('util').promisify
-const readFile = promisify(require('fs').readFile)
-
-test('index.js - functionality', async (t) => {
-  t.plan(3)
-
-  const expected = await readFile('./fixtures/utilities.css', 'utf-8')
-
-  await require('./index')({
-    writeFile (file, content) {
-      t.equals(file, './fixtures/utilities.css')
-      t.equals(content, expected)
-    }
-  })({
-    input: './fixtures/variables.css',
-    output: './fixtures/utilities.css'
-  })
-
-  t.ok(1)
-})
 
 test('cli.js', async (t) => {
   t.plan(3)
@@ -29,8 +9,8 @@ test('cli.js', async (t) => {
   } catch (e) {
     t.ok(e)
 
-    t.equal(e.stderr.includes('Usage'), true)
+    t.equal(e.stdout.includes('Usage'), true)
 
-    t.equal(e.stderr.includes('Parameters'), true)
+    t.equal(e.stdout.includes('Options'), true)
   }
 })

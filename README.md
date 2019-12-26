@@ -1,53 +1,95 @@
 # @erickmerchant/css
 
-_a cli to generate atomic css_
+css from js. atomic styles
 
-It takes a css file with custom properties and generates a css file full of atomic css classes.
+``` js
+// input.js
 
-## Usage
+const desktop = '@media (min-width: 100px)'
 
-```
-npx @erickmerchant/css -h
-```
+const bold = {
+  'font-weight': 'bold'
+}
 
-## Example
-
-```
-npx @erickmerchant/css example/variables.css example/utilities.css
+module.exports = [`
+    p {
+      margin-top: var(--spacing)
+    }
+  `, {
+  loud: {
+    ...bold,
+    [desktop]: {
+      'font-size': '5em'
+    },
+    '::after': {
+      content: '!'
+    }
+  },
+  button: {
+    ...bold,
+    background: '#ff8000',
+    color: '#111'
+  }
+}]
+`
 ```
 
 ``` css
-/* example/variables.css */
+/* output.css */
 
-@custom-media --breakpoint-desktop (width >= 40rem);
-
-:root {
-  --padding: 0.5rem;
-  --padding-more: 1rem;
-
-  --margin: 0.5rem;
-  --margin-more: 1rem;
-
-  --gap: 0.5rem;
-  --gap-more: 1rem;
-
-  --width: 50rem;
-  --width-more: 100rem;
-  --height: 50rem;
-  --height-more: 100rem;
-
-  --font-size: 16px;
-  --font-size-more: 32px;
-
-  --border-width: 3px;
-  --border-width-more: 6px;
-
-  --border-radius: 3px;
-  --border-radius-more: 6px;
-
-  --blue: hsl(200, 100%, 50%);
-  --gray: gray(50);
-  --orange: rgb(255, 125, 0);
-  --pink: #FF0080;
+p {
+  margin-top: var(--spacing)
 }
+
+.a {
+  font-weight: bold
+}
+
+.b::after {
+  content: '!'
+}
+
+.c {
+  background: #ff8000;
+  color: #111;
+}
+
+@media (min-width: 100px) {
+  .b {
+    font-size: 5em;
+  }
+}
+```
+
+``` js
+// output.js
+
+export const classes = {
+  loud: 'a b',
+  button: 'a c'
+}
+```
+
+``` js
+// app.js
+
+import {classes} from './output.js'
+
+classes.loud // 'a b'
+
+classes.button // 'a c'
+```
+
+## usage
+
+build once
+
+```
+css input.js -o output
+```
+
+watch for changes
+
+```
+css -w input.js -o output
 ```

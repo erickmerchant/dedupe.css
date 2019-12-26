@@ -1,29 +1,24 @@
 #!/usr/bin/env node
 'use strict'
 
-const command = require('sergeant')
-const css = require('./index')
-const createWriteStream = require('fs').createWriteStream
-const streamPromise = require('stream-to-promise')
+const {command, start} = require('sergeant')('css')
+const action = require('./index')
 
-command('css', ({ option, parameter }) => {
-  parameter('input', {
-    description: 'what the input css file is named',
-    required: true
-  })
-
-  parameter('output', {
-    description: 'what the output css file will be named',
-    required: true
-  })
-
-  return (args) => css({
-    writeFile (path, content) {
-      const stream = createWriteStream(path)
-
-      stream.end(content)
-
-      return streamPromise(stream)
+command({
+  signature: ['input', 'output'],
+  options: {
+    input: {
+      description: 'what the input js file is named',
+      required: true,
+      parameter: true
+    },
+    output: {
+      description: 'what the output css and js files will be named',
+      required: true,
+      parameter: true
     }
-  })(args)
-})(process.argv.slice(2))
+  },
+  action
+})
+
+start(process.argv.slice(2))
