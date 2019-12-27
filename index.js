@@ -114,7 +114,7 @@ const run = async (args) => {
           if (equal(entries[i][1], names)) {
             decls.push(entries[i][0])
 
-            entries.shift()
+            entries.splice(i, 1)
           } else {
             i++
           }
