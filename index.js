@@ -71,7 +71,7 @@ const run = async (args) => {
   const input = require(args.input)
   const output = {
     css: createWriteStream(path.join(process.cwd(), `${args.output}.css`)),
-    js: createWriteStream(path.join(process.cwd(), `${args.output}.js`))
+    js: createWriteStream(path.join(process.cwd(), `${args.output}.mjs`))
   }
 
   const results = {
