@@ -117,7 +117,7 @@ const run = async (args) => {
 
         const cls = results.ids[name]
 
-        if (results.map[name] && !results.map[name].includes(cls)) {
+        if (results.map[name] == null || !results.map[name].includes(cls)) {
           set(results.map, [name], [cls])
         }
 
