@@ -1,10 +1,4 @@
 export const classes = {
-  "loud": [
-    "a",
-    "c"
-  ],
-  "button": [
-    "a",
-    "b"
-  ]
+  "loud": "a c",
+  "button": "a b"
 }

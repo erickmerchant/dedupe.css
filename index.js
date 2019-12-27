@@ -138,6 +138,10 @@ const run = async (args) => {
 
   output.css.end(input._after != null ? input._after : '')
 
+  for (const name of Object.keys(results.map)) {
+    results.map[name] = results.map[name].join(' ')
+  }
+
   output.js.end(`export const classes = ${JSON.stringify(results.map, null, 2)}`)
 
   return Promise.all([
