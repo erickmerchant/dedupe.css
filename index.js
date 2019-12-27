@@ -1,4 +1,9 @@
 const path = require('path')
+const fs = require('fs')
+const stream = require('stream')
+const promisify = require('util').promisify
+const finished = promisify(stream.finished)
+const createWriteStream = fs.createWriteStream
 
 const entries = Object.entries
 
@@ -38,8 +43,6 @@ const base52 = (i) => {
   return result
 }
 
-let id = 0
-
 const build = (results, name, definition, context = '') => {
   for (const [property, value] of entries(definition)) {
     if (typeof value === 'object') {
@@ -54,84 +57,107 @@ const build = (results, name, definition, context = '') => {
   }
 }
 
-module.exports = async (args) => {
-  const input = require(path.join(process.cwd(), args.input))
+const run = async (args) => {
+  let id = 0
 
-  for (const part of [].concat(input)) {
-    if (typeof part === 'string') {
-      console.log(part)
+  const input = require(args.input)
+  const output = {
+    css: createWriteStream(path.join(process.cwd(), `${args.output}.css`)),
+    js: createWriteStream(path.join(process.cwd(), `${args.output}.js`))
+  }
 
-      continue
+  const results = {
+    medias: [''],
+    repeats: {},
+    singles: {},
+    ids: {},
+    map: {}
+  }
+
+  if (input._before) {
+    output.css.write(input._before)
+  }
+
+  for (const [name, definition] of entries(input)) {
+    if (name.startsWith('_')) continue
+
+    build(results, name, definition)
+  }
+
+  for (const context of results.medias) {
+    const prefix = !context.startsWith('@') ? context : ''
+
+    if (context.startsWith('@')) {
+      output.css.write(`${context} {\n`)
     }
 
-    const results = {
-      medias: [''],
-      repeats: {},
-      singles: {},
-      ids: {},
-      map: {}
-    }
+    for (const [property, decls] of entries(results.repeats[context])) {
+      for (const [value, names] of entries(decls)) {
+        if (names.length > 1) {
+          const cls = base52(id++)
 
-    for (const [name, definition] of entries(part)) {
-      build(results, name, definition)
-    }
+          output.css.write(`.${cls}${prefix} { ${property}: ${value}; }\n`)
 
-    for (const context of results.medias) {
-      const prefix = !context.startsWith('@') ? context : ''
-
-      if (context.startsWith('@')) {
-        console.log(`${context} {`)
-      }
-
-      for (const [property, decls] of entries(results.repeats[context])) {
-        for (const [value, names] of entries(decls)) {
-          if (names.length > 1) {
-            const cls = base52(id++)
-
-            console.log(`.${cls}${prefix} {`)
-
-            console.log(`${property}: ${value};`)
-
-            console.log('}')
-
-            for (const name of names) {
-              set(results.map, [name], [cls])
-            }
-          } else {
-            const name = names[0]
-
-            set(results.singles, [context, name], [[property, value]])
-          }
-        }
-      }
-
-      if (results.singles[context]) {
-        for (const [name, decls] of entries(results.singles[context])) {
-          if (results.ids[name] == null) {
-            results.ids[name] = base52(id++)
-          }
-
-          const cls = results.ids[name]
-
-          if (results.map[name] && !results.map[name].includes(cls)) {
+          for (const name of names) {
             set(results.map, [name], [cls])
           }
+        } else {
+          const name = names[0]
 
-          console.log(`.${cls}${prefix} {`)
-
-          for (const [property, value] of decls) {
-            console.log(`${property}: ${value};`)
-          }
-
-          console.log('}')
+          set(results.singles, [context, name], [[property, value]])
         }
-      }
-
-      if (context.startsWith('@')) {
-        console.log('}')
       }
     }
 
-    console.log(JSON.stringify(results.map))
+    if (results.singles[context]) {
+      for (const [name, decls] of entries(results.singles[context])) {
+        if (results.ids[name] == null) {
+          results.ids[name] = base52(id++)
+        }
+
+        const cls = results.ids[name]
+
+        if (results.map[name] && !results.map[name].includes(cls)) {
+          set(results.map, [name], [cls])
+        }
+
+        output.css.write(`.${cls}${prefix} {\n`)
+
+        for (const [property, value] of decls) {
+          output.css.write(`${property}: ${value};\n`)
+        }
+
+        output.css.write('}\n')
+      }
+    }
+
+    if (context.startsWith('@')) {
+      output.css.write('}\n')
+    }
   }
+
+  output.css.end(input._after != null ? input._after : '')
+
+  output.js.end(`export const classes = ${JSON.stringify(results.map, null, 2)}`)
+
+  return Promise.all([
+    finished(output.css),
+    finished(output.js)
+  ])
+}
+
+module.exports = (args) => {
+  args.input = path.join(process.cwd(), args.input)
+
+  if (!args.watch) {
+    return run(args)
+  }
+
+  run(args)
+
+  fs.watch(args.input, () => {
+    delete require.cache[args.input]
+
+    run(args)
+  })
 }

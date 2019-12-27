@@ -15,7 +15,7 @@
     "url": "git+https://github.com/erickmerchant/css.git"
   },
   "author": "Erick Merchant <erickmerchant@gmail.com>",
-  "license": "MIT",
+  "license": "ISC",
   "bugs": {
     "url": "https://github.com/erickmerchant/css/issues"
   },

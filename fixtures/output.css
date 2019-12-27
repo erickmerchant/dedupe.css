@@ -1,0 +1,17 @@
+
+    p {
+      margin-top: var(--spacing)
+    }
+  .a { font-weight: bold; }
+.b {
+background: #ff8000;
+color: #111;
+}
+@media (min-width: 100px) {
+.c {
+font-size: 5em;
+}
+}
+.c::after {
+content: !;
+}
