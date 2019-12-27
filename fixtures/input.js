@@ -1,7 +1,8 @@
 const desktop = '@media (min-width: 100px)'
 
-const bold = {
-  'font-weight': 'bold'
+const emphasis = {
+  'font-weight': 'bold',
+  'font-style': 'italic'
 }
 
 module.exports = {
@@ -11,7 +12,7 @@ module.exports = {
     }
   `,
   loud: {
-    ...bold,
+    ...emphasis,
     [desktop]: {
       'font-size': '5em'
     },
@@ -20,7 +21,7 @@ module.exports = {
     }
   },
   button: {
-    ...bold,
+    ...emphasis,
     background: '#ff8000',
     color: '#111'
   }

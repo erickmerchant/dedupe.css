@@ -5,8 +5,6 @@ const promisify = require('util').promisify
 const finished = promisify(stream.finished)
 const createWriteStream = fs.createWriteStream
 
-const entries = Object.entries
-
 const letters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
 const set = (obj, parts, value) => {
@@ -29,6 +27,16 @@ const set = (obj, parts, value) => {
   }
 }
 
+const equal = (a, b) => {
+  if (a.length !== b.length) return false
+
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false
+  }
+
+  return true
+}
+
 const base52 = (i) => {
   let r
   let result = ''
@@ -44,11 +52,11 @@ const base52 = (i) => {
 }
 
 const build = (results, name, definition, context = '') => {
-  for (const [property, value] of entries(definition)) {
+  for (const [property, value] of Object.entries(definition)) {
     if (typeof value === 'object') {
       build(results, name, value, property)
     } else {
-      set(results.repeats, [context, property, value], [name])
+      set(results.tree, [context, `${property}: ${value}`], [name])
 
       if (!results.medias.includes(context)) {
         results.medias.push(context)
@@ -68,8 +76,7 @@ const run = async (args) => {
 
   const results = {
     medias: [''],
-    repeats: {},
-    singles: {},
+    tree: {},
     ids: {},
     map: {}
   }
@@ -78,7 +85,7 @@ const run = async (args) => {
     output.css.write(input._before)
   }
 
-  for (const [name, definition] of entries(input)) {
+  for (const [name, definition] of Object.entries(input)) {
     if (name.startsWith('_')) continue
 
     build(results, name, definition)
@@ -91,44 +98,58 @@ const run = async (args) => {
       output.css.write(`${context} {\n`)
     }
 
-    for (const [property, decls] of entries(results.repeats[context])) {
-      for (const [value, names] of entries(decls)) {
-        if (names.length > 1) {
-          const cls = base52(id++)
+    const entries = Object.entries(results.tree[context])
+    const remainders = {}
 
-          output.css.write(`.${cls}${prefix} { ${property}: ${value}; }\n`)
+    while (entries.length) {
+      const [decl, names] = entries.shift()
 
-          for (const name of names) {
-            set(results.map, [name], [cls])
+      if (names.length > 1) {
+        const cls = base52(id++)
+
+        const decls = [decl]
+        let i = 0
+
+        while (i < entries.length) {
+          if (equal(entries[i][1], names)) {
+            decls.push(entries[i][0])
+
+            entries.shift()
+          } else {
+            i++
           }
-        } else {
-          const name = names[0]
-
-          set(results.singles, [context, name], [[property, value]])
         }
+
+        output.css.write(`.${cls}${prefix} { ${decls.join('; ')}; }\n`)
+
+        for (const name of names) {
+          set(results.map, [name], [cls])
+        }
+      } else {
+        const name = names[0]
+
+        set(remainders, [name], [decl])
       }
     }
 
-    if (results.singles[context]) {
-      for (const [name, decls] of entries(results.singles[context])) {
-        if (results.ids[name] == null) {
-          results.ids[name] = base52(id++)
-        }
-
-        const cls = results.ids[name]
-
-        if (results.map[name] == null || !results.map[name].includes(cls)) {
-          set(results.map, [name], [cls])
-        }
-
-        output.css.write(`.${cls}${prefix} {\n`)
-
-        for (const [property, value] of decls) {
-          output.css.write(`${property}: ${value};\n`)
-        }
-
-        output.css.write('}\n')
+    for (const [name, decls] of Object.entries(remainders)) {
+      if (results.ids[name] == null) {
+        results.ids[name] = base52(id++)
       }
+
+      const cls = results.ids[name]
+
+      if (results.map[name] == null || !results.map[name].includes(cls)) {
+        set(results.map, [name], [cls])
+      }
+
+      output.css.write(`.${cls}${prefix} {\n`)
+
+      for (const decl of decls) {
+        output.css.write(`${decl};\n`)
+      }
+
+      output.css.write('}\n')
     }
 
     if (context.startsWith('@')) {
