@@ -2,6 +2,7 @@ const path = require('path')
 const fs = require('fs')
 const stream = require('stream')
 const promisify = require('util').promisify
+const postcss = require('postcss')
 const finished = promisify(stream.finished)
 const createWriteStream = fs.createWriteStream
 
@@ -51,16 +52,18 @@ const base52 = (i) => {
   return result
 }
 
-const build = (results, name, definition, context = '') => {
-  for (const [property, value] of Object.entries(definition)) {
-    if (typeof value === 'object') {
-      build(results, name, value, property)
-    } else {
-      set(results.tree, [context, `${property}: ${value}`], [name])
+const build = (results, name, nodes, context = '') => {
+  if (!results.medias.includes(context)) {
+    results.medias.push(context)
+  }
 
-      if (!results.medias.includes(context)) {
-        results.medias.push(context)
-      }
+  for (const node of nodes) {
+    if (node.type === 'decl') {
+      set(results.tree, [context, `${node.prop}: ${node.value}`], [name])
+    } else if (node.type === 'atrule') {
+      build(results, name, node.nodes, `@${node.name} ${node.params}`)
+    } else if (node.type === 'rule') {
+      build(results, name, node.nodes, node.selector)
     }
   }
 }
@@ -85,10 +88,12 @@ const run = async (args) => {
     output.css.write(input._before)
   }
 
-  for (const [name, definition] of Object.entries(input)) {
+  for (const [name, raw] of Object.entries(input)) {
     if (name.startsWith('_')) continue
 
-    build(results, name, definition)
+    const parsed = postcss.parse(raw)
+
+    build(results, name, parsed.nodes)
   }
 
   for (const context of results.medias) {

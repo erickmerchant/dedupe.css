@@ -1,9 +1,9 @@
 const desktop = '@media (min-width: 100px)'
 
-const emphasis = {
-  'font-weight': 'bold',
-  'font-style': 'italic'
-}
+const emphasis = `
+  font-weight: bold;
+  font-style: italic;
+`
 
 module.exports = {
   _before: `
@@ -11,18 +11,18 @@ module.exports = {
       margin-top: var(--spacing)
     }
   `,
-  loud: {
-    ...emphasis,
-    [desktop]: {
-      'font-size': '5em'
-    },
-    '::after': {
+  loud: `
+    ${emphasis}
+    ${desktop} {
+      font-size: 5em;
+    }
+    ::after {
       content: '!'
     }
-  },
-  button: {
-    ...emphasis,
-    background: '#ff8000',
-    color: '#111'
-  }
+  `,
+  button: `
+    ${emphasis}
+    background: #ff8000;
+    color: #111;
+  `
 }

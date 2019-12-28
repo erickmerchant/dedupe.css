@@ -7,31 +7,31 @@ css from js. atomic styles
 
 const desktop = '@media (min-width: 100px)'
 
-const bold = {
-  'font-weight': 'bold'
-}
+const bold = `
+  font-weight: bold;
+`
 
-module.exports = [`
+module.exports = {
+  _before: `
     p {
       margin-top: var(--spacing)
     }
-  `, {
-  loud: {
-    ...bold,
-    [desktop]: {
-      'font-size': '5em'
-    },
-    '::after': {
-      content: '!'
+  `,
+  loud: `
+    ${bold}
+    ${desktop} {
+      font-size: 5em;
     }
-  },
-  button: {
-    ...bold,
-    background: '#ff8000',
-    color: '#111'
-  }
-}]
-`
+    ::after {
+      content: '!';
+    }
+  `,
+  button: `
+    ${bold}
+    background: #ff8000;
+    color: #111;
+  `
+}
 ```
 
 ``` css
@@ -61,8 +61,8 @@ p {
 }
 ```
 
-``` js
-// output.js
+``` mjs
+// output.mjs
 
 export const classes = {
   loud: 'a b',
@@ -70,10 +70,10 @@ export const classes = {
 }
 ```
 
-``` js
-// app.js
+``` mjs
+// app.mjs
 
-import {classes} from './output.js'
+import {classes} from './output.mjs'
 
 classes.loud // 'a b'
 

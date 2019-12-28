@@ -13,5 +13,5 @@ font-size: 5em;
 }
 }
 .c::after {
-content: !;
+content: '!';
 }
