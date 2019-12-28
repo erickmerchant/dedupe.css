@@ -98,7 +98,7 @@ const run = async (args) => {
       output.css.write(`${context} {\n`)
     }
 
-    const entries = Object.entries(results.tree[context])
+    const entries = results.tree[context] != null ? Object.entries(results.tree[context]) : []
     const remainders = {}
 
     while (entries.length) {
