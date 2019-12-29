@@ -2,16 +2,21 @@
     p {
       margin-top: var(--spacing)
     }
-  .a { font-weight: bold; font-style: italic; }
+  .a { font-style: italic; font-weight: bold; }
 .b {
-background: #ff8000;
 color: #111;
+background: #ff8000;
+}
+.c::after {
+content: '!';
 }
 @media (min-width: 100px) {
 .c {
 font-size: 5em;
 }
 }
-.c::after {
-content: '!';
+@media (min-width: 100px) ::after {
+.c {
+content: '!!';
+}
 }

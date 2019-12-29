@@ -1,6 +1,7 @@
 const desktop = '@media (min-width: 100px)'
 
 const emphasis = `
+  font-weight: normal;
   font-weight: bold;
   font-style: italic;
 `
@@ -15,6 +16,10 @@ module.exports = {
     ${emphasis}
     ${desktop} {
       font-size: 5em;
+
+      ::after {
+        content: '!!'
+      }
     }
     ::after {
       content: '!'

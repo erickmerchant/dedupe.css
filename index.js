@@ -52,18 +52,63 @@ const base52 = (i) => {
   return result
 }
 
-const build = (results, name, nodes, context = '') => {
-  if (!results.medias.includes(context)) {
-    results.medias.push(context)
-  }
+const build = (results, name, nodes) => {
+  const indexes = {}
+  let i = -1
 
-  for (const node of nodes) {
+  for (const node of nodes.reverse()) {
+    i++
+
     if (node.type === 'decl') {
-      set(results.tree, [context, `${node.prop}: ${node.value}`], [name])
-    } else if (node.type === 'atrule') {
-      build(results, name, node.nodes, `@${node.name} ${node.params}`)
-    } else if (node.type === 'rule') {
-      build(results, name, node.nodes, node.selector)
+      if (indexes[node.prop] != null) continue
+
+      set(results.tree, ['', `${node.prop}: ${node.value}`], [name])
+
+      indexes[node.prop] = i
+    } else {
+      let context
+
+      if (node.type === 'atrule') {
+        context = `@${node.name} ${node.params}`
+      } else if (node.type === 'rule') {
+        context = node.selector
+      }
+
+      if (context) {
+        if (!results.medias.includes(context)) {
+          results.medias.push(context)
+        }
+
+        for (const n of node.nodes.reverse()) {
+          i++
+
+          if (n.type === 'decl') {
+            if (indexes[`${context}${n.prop}`] != null) continue
+
+            set(results.tree, [context, `${n.prop}: ${n.value}`], [name])
+
+            indexes[`${context}${n.prop}`] = i
+          } else if (n.type === 'rule') {
+            let c = `${context} ${n.selector}`
+
+            if (!results.medias.includes(c)) {
+              results.medias.push(c)
+            }
+
+            for (const _n of n.nodes.reverse()) {
+              i++
+
+              if (_n.type === 'decl') {
+                if (indexes[`${c}${_n.prop}`] != null) continue
+
+                set(results.tree, [c, `${_n.prop}: ${_n.value}`], [name])
+
+                indexes[`${c}${_n.prop}`] = i
+              }
+            }
+          }
+        }
+      }
     }
   }
 }
