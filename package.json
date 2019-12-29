@@ -2,6 +2,16 @@
   "name": "@erickmerchant/css",
   "version": "16.0.0",
   "description": "a cli to generate atomic css",
+  "homepage": "https://github.com/erickmerchant/css#readme",
+  "bugs": {
+    "url": "https://github.com/erickmerchant/css/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/erickmerchant/css.git"
+  },
+  "license": "ISC",
+  "author": "Erick Merchant <erickmerchant@gmail.com>",
   "main": "index.js",
   "bin": {
     "css": "./cli.js"
@@ -10,16 +20,6 @@
     "pretest": "lint *.js",
     "test": "tape test.js"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/erickmerchant/css.git"
-  },
-  "author": "Erick Merchant <erickmerchant@gmail.com>",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/erickmerchant/css/issues"
-  },
-  "homepage": "https://github.com/erickmerchant/css#readme",
   "dependencies": {
     "@erickmerchant/lint": "^3.6.2",
     "eslint": "^6.8.0",
