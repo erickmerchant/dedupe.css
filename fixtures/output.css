@@ -2,10 +2,10 @@
     p {
       margin-top: var(--spacing)
     }
-  .a { font-style: italic; font-weight: bold; }
+  .a { font-weight: bold; font-style: italic; }
 .b {
-color: #111;
 background: #ff8000;
+color: #111;
 }
 .c::after {
 content: '!';
@@ -14,9 +14,7 @@ content: '!';
 .c {
 font-size: 5em;
 }
-}
-@media (min-width: 100px) ::after {
-.c {
+.c::after {
 content: '!!';
 }
 }

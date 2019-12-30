@@ -9,6 +9,8 @@ const createWriteStream = fs.createWriteStream
 const letters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
 const set = (obj, parts, value) => {
+  parts = [...parts]
+
   const last = parts.pop()
 
   while (parts.length) {
@@ -26,6 +28,22 @@ const set = (obj, parts, value) => {
   } else {
     obj[last] = value
   }
+}
+
+const get = (obj, parts) => {
+  parts = [...parts]
+
+  while (parts.length) {
+    const part = parts.shift()
+
+    if (obj[part] == null) {
+      return null
+    }
+
+    obj = obj[part]
+  }
+
+  return obj
 }
 
 const equal = (a, b) => {
@@ -53,57 +71,52 @@ const base52 = (i) => {
 }
 
 const build = (results, name, nodes) => {
-  const indexes = {}
-  let i = -1
-
   for (const node of nodes.reverse()) {
-    i++
-
     if (node.type === 'decl') {
-      if (indexes[node.prop] != null) continue
+      const group = get(results.tree, ['', ''])
 
-      set(results.tree, ['', `${node.prop}: ${node.value}`], [name])
+      if (group && Object.entries(group).find(([key, names]) => key.startsWith(`${node.prop}: `) && names.includes(name))) continue
 
-      indexes[node.prop] = i
+      set(results.tree, ['', '', `${node.prop}: ${node.value}`], [name])
     } else {
       let context
 
       if (node.type === 'atrule') {
-        context = `@${node.name} ${node.params}`
+        context = [`@${node.name} ${node.params}`, '']
       } else if (node.type === 'rule') {
-        context = node.selector
+        context = ['', node.selector]
       }
 
       if (context) {
-        if (!results.medias.includes(context)) {
-          results.medias.push(context)
-        }
-
         for (const n of node.nodes.reverse()) {
-          i++
-
           if (n.type === 'decl') {
-            if (indexes[`${context}${n.prop}`] != null) continue
+            const group = get(results.tree, context)
 
-            set(results.tree, [context, `${n.prop}: ${n.value}`], [name])
+            if (group && Object.entries(group).find(([key, names]) => key.startsWith(`${n.prop}: `) && names.includes(name))) continue
 
-            indexes[`${context}${n.prop}`] = i
-          } else if (n.type === 'rule') {
-            let c = `${context} ${n.selector}`
-
-            if (!results.medias.includes(c)) {
-              results.medias.push(c)
-            }
+            set(results.tree, [...context, `${n.prop}: ${n.value}`], [name])
+          } else if (context[0] && n.type === 'rule') {
+            const c = [context[0], n.selector]
 
             for (const _n of n.nodes.reverse()) {
-              i++
-
               if (_n.type === 'decl') {
-                if (indexes[`${c}${_n.prop}`] != null) continue
+                const group = get(results.tree, c)
 
-                set(results.tree, [c, `${_n.prop}: ${_n.value}`], [name])
+                if (group && Object.entries(group).find(([key, names]) => key.startsWith(`${_n.prop}: `) && names.includes(name))) continue
 
-                indexes[`${c}${_n.prop}`] = i
+                set(results.tree, [...c, `${_n.prop}: ${_n.value}`], [name])
+              }
+            }
+          } else if (context[1] && n.type === 'atrule') {
+            const c = [`@${n.name} ${n.params}`, context[1]]
+
+            for (const _n of n.nodes.reverse()) {
+              if (_n.type === 'decl') {
+                const group = get(results.tree, c)
+
+                if (group && Object.entries(group).find(([key, names]) => key.startsWith(`${_n.prop}: `) && names.includes(name))) continue
+
+                set(results.tree, [...c, `${_n.prop}: ${_n.value}`], [name])
               }
             }
           }
@@ -123,7 +136,6 @@ const run = async (args) => {
   }
 
   const results = {
-    medias: [''],
     tree: {},
     ids: {},
     map: {}
@@ -141,68 +153,68 @@ const run = async (args) => {
     build(results, name, parsed.nodes)
   }
 
-  for (const context of results.medias) {
-    const prefix = !context.startsWith('@') ? context : ''
-
-    if (context.startsWith('@')) {
-      output.css.write(`${context} {\n`)
+  for (const [media, pseudos] of Object.entries(results.tree)) {
+    if (media) {
+      output.css.write(`${media} {\n`)
     }
 
-    const entries = results.tree[context] != null ? Object.entries(results.tree[context]) : []
-    const remainders = {}
+    for (const [pseudo, tree] of Object.entries(pseudos).reverse()) {
+      const entries = Object.entries(tree).reverse()
+      const remainders = {}
 
-    while (entries.length) {
-      const [decl, names] = entries.shift()
+      while (entries.length) {
+        const [decl, names] = entries.shift()
 
-      if (names.length > 1) {
-        const cls = base52(id++)
+        if (names.length > 1) {
+          const cls = base52(id++)
 
-        const decls = [decl]
-        let i = 0
+          const decls = [decl]
+          let i = 0
 
-        while (i < entries.length) {
-          if (equal(entries[i][1], names)) {
-            decls.push(entries[i][0])
+          while (i < entries.length) {
+            if (equal(entries[i][1], names)) {
+              decls.push(entries[i][0])
 
-            entries.splice(i, 1)
-          } else {
-            i++
+              entries.splice(i, 1)
+            } else {
+              i++
+            }
           }
+
+          output.css.write(`.${cls}${pseudo} { ${decls.join('; ')}; }\n`)
+
+          for (const name of names) {
+            set(results.map, [name], [cls])
+          }
+        } else {
+          const name = names[0]
+
+          set(remainders, [name], [decl])
+        }
+      }
+
+      for (const [name, decls] of Object.entries(remainders)) {
+        if (results.ids[name] == null) {
+          results.ids[name] = base52(id++)
         }
 
-        output.css.write(`.${cls}${prefix} { ${decls.join('; ')}; }\n`)
+        const cls = results.ids[name]
 
-        for (const name of names) {
+        if (results.map[name] == null || !results.map[name].includes(cls)) {
           set(results.map, [name], [cls])
         }
-      } else {
-        const name = names[0]
 
-        set(remainders, [name], [decl])
+        output.css.write(`.${cls}${pseudo} {\n`)
+
+        for (const decl of decls) {
+          output.css.write(`${decl};\n`)
+        }
+
+        output.css.write('}\n')
       }
     }
 
-    for (const [name, decls] of Object.entries(remainders)) {
-      if (results.ids[name] == null) {
-        results.ids[name] = base52(id++)
-      }
-
-      const cls = results.ids[name]
-
-      if (results.map[name] == null || !results.map[name].includes(cls)) {
-        set(results.map, [name], [cls])
-      }
-
-      output.css.write(`.${cls}${prefix} {\n`)
-
-      for (const decl of decls) {
-        output.css.write(`${decl};\n`)
-      }
-
-      output.css.write('}\n')
-    }
-
-    if (context.startsWith('@')) {
+    if (media) {
       output.css.write('}\n')
     }
   }
