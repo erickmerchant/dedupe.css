@@ -1,6 +1,6 @@
 {
   "name": "@erickmerchant/css",
-  "version": "16.0.0",
+  "version": "16.0.1",
   "description": "a cli to generate atomic css",
   "homepage": "https://github.com/erickmerchant/css#readme",
   "bugs": {
