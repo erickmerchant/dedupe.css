@@ -70,6 +70,13 @@ const base52 = (i) => {
   return result
 }
 
+const outdent = (str) => {
+  const parts = str.split('\n')
+  const length = Math.min(...parts.filter((part) => part.trim().length > 0).map((part) => part.match(/^\s*/)[0].length))
+
+  return parts.map((part) => (part.length ? part.substring(length) : part)).join('\n')
+}
+
 const build = (results, name, nodes) => {
   for (const node of nodes.reverse()) {
     if (node.type === 'decl') {
@@ -142,7 +149,7 @@ const run = async (args) => {
   }
 
   if (input._before) {
-    output.css.write(input._before)
+    output.css.write(`${outdent(input._before)}\n`)
   }
 
   for (const [name, raw] of Object.entries(input)) {
@@ -154,8 +161,12 @@ const run = async (args) => {
   }
 
   for (const [media, pseudos] of Object.entries(results.tree)) {
+    let indent = ''
+
     if (media) {
       output.css.write(`${media} {\n`)
+
+      indent = '  '
     }
 
     for (const [pseudo, tree] of Object.entries(pseudos).reverse()) {
@@ -181,7 +192,7 @@ const run = async (args) => {
             }
           }
 
-          output.css.write(`.${cls}${pseudo} { ${decls.join('; ')}; }\n`)
+          output.css.write(`${indent}.${cls}${pseudo} { ${decls.join('; ')}; }\n`)
 
           for (const name of names) {
             set(results.map, [name], [cls])
@@ -204,13 +215,13 @@ const run = async (args) => {
           set(results.map, [name], [cls])
         }
 
-        output.css.write(`.${cls}${pseudo} {\n`)
+        output.css.write(`${indent}.${cls}${pseudo} {\n`)
 
         for (const decl of decls) {
-          output.css.write(`${decl};\n`)
+          output.css.write(`${indent}  ${decl};\n`)
         }
 
-        output.css.write('}\n')
+        output.css.write(`${indent}}\n`)
       }
     }
 
@@ -219,7 +230,7 @@ const run = async (args) => {
     }
   }
 
-  output.css.end(input._after != null ? input._after : '')
+  output.css.end(input._after != null ? `${outdent(input._after)}\n` : '')
 
   for (const name of Object.keys(results.map)) {
     results.map[name] = results.map[name].join(' ')

@@ -1,20 +1,21 @@
 
-    p {
-      margin-top: var(--spacing)
-    }
-  .a { font-weight: bold; font-style: italic; }
+p {
+  margin-top: var(--spacing)
+}
+
+.a { font-weight: bold; font-style: italic; }
 .b {
-background: #ff8000;
-color: #111;
+  background: #ff8000;
+  color: #111;
 }
 .c::after {
-content: '!';
+  content: '!';
 }
 @media (min-width: 100px) {
-.c {
-font-size: 5em;
-}
-.c::after {
-content: '!!';
-}
+  .c {
+    font-size: 5em;
+  }
+  .c::after {
+    content: '!!';
+  }
 }
