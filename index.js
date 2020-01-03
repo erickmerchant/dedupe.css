@@ -259,8 +259,6 @@ module.exports = (args) => {
   run(args)
 
   fs.watch(args.input, () => {
-    delete erequire.cache[args.input]
-
     run(args)
   })
 }
