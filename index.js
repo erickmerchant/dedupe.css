@@ -1,4 +1,4 @@
-const erequire = require('esm')(module)
+const erequire = require('esm')(module, {cache: false})
 const path = require('path')
 const fs = require('fs')
 const stream = require('stream')
