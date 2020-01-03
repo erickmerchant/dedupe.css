@@ -21,6 +21,7 @@
     "test": "tape test.js"
   },
   "dependencies": {
+    "esm": "^3.2.25",
     "postcss": "^7.0.26",
     "sergeant": "^27.2.1"
   },

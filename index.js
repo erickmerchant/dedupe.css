@@ -1,3 +1,4 @@
+const erequire = require('esm')(module)
 const path = require('path')
 const fs = require('fs')
 const stream = require('stream')
@@ -5,6 +6,7 @@ const promisify = require('util').promisify
 const postcss = require('postcss')
 const finished = promisify(stream.finished)
 const createWriteStream = fs.createWriteStream
+const mkdir = promisify(fs.mkdir)
 
 const letters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
@@ -136,7 +138,10 @@ const build = (results, name, nodes) => {
 const run = async (args) => {
   let id = 0
 
-  const input = require(args.input)
+  const input = erequire(args.input).default
+
+  await mkdir(path.dirname(path.join(process.cwd(), args.output)), {recursive: true})
+
   const output = {
     css: createWriteStream(path.join(process.cwd(), `${args.output}.css`)),
     js: createWriteStream(path.join(process.cwd(), `${args.output}.mjs`))

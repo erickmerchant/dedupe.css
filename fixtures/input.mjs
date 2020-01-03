@@ -6,7 +6,7 @@ const emphasis = `
   font-style: italic;
 `
 
-module.exports = {
+export default {
   _before: `
     p {
       margin-top: var(--spacing)
