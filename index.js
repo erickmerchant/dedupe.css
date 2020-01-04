@@ -264,7 +264,17 @@ module.exports = (args) => {
 
   run(args)
 
+  let changed = false
+
   fs.watch(args.input, () => {
-    run(args)
+    if (!changed) {
+      changed = true
+
+      setTimeout(() => {
+        run(args)
+
+        changed = false
+      }, 100)
+    }
   })
 }
