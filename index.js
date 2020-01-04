@@ -79,14 +79,15 @@ const outdent = (str) => {
   return parts.map((part) => (part.length ? part.substring(length) : part)).join('\n')
 }
 
-const build = (results, name, nodes) => {
+const build = (nodes) => {
+  const results = []
+
   for (const node of nodes.reverse()) {
     if (node.type === 'decl') {
-      const group = get(results.tree, ['', ''])
-
-      if (group && Object.entries(group).find(([key, names]) => key.startsWith(`${node.prop}: `) && names.includes(name))) continue
-
-      set(results.tree, ['', '', `${node.prop}: ${node.value}`], [name])
+      results.push({
+        context: ['', ''],
+        node
+      })
     } else {
       let context
 
@@ -99,21 +100,19 @@ const build = (results, name, nodes) => {
       if (context) {
         for (const n of node.nodes.reverse()) {
           if (n.type === 'decl') {
-            const group = get(results.tree, context)
-
-            if (group && Object.entries(group).find(([key, names]) => key.startsWith(`${n.prop}: `) && names.includes(name))) continue
-
-            set(results.tree, [...context, `${n.prop}: ${n.value}`], [name])
+            results.push({
+              context,
+              node: n
+            })
           } else if (context[0] && n.type === 'rule') {
             const c = [context[0], n.selector]
 
             for (const _n of n.nodes.reverse()) {
               if (_n.type === 'decl') {
-                const group = get(results.tree, c)
-
-                if (group && Object.entries(group).find(([key, names]) => key.startsWith(`${_n.prop}: `) && names.includes(name))) continue
-
-                set(results.tree, [...c, `${_n.prop}: ${_n.value}`], [name])
+                results.push({
+                  context: c,
+                  node: _n
+                })
               }
             }
           } else if (context[1] && n.type === 'atrule') {
@@ -121,11 +120,10 @@ const build = (results, name, nodes) => {
 
             for (const _n of n.nodes.reverse()) {
               if (_n.type === 'decl') {
-                const group = get(results.tree, c)
-
-                if (group && Object.entries(group).find(([key, names]) => key.startsWith(`${_n.prop}: `) && names.includes(name))) continue
-
-                set(results.tree, [...c, `${_n.prop}: ${_n.value}`], [name])
+                results.push({
+                  context: c,
+                  node: _n
+                })
               }
             }
           }
@@ -133,6 +131,8 @@ const build = (results, name, nodes) => {
       }
     }
   }
+
+  return results
 }
 
 const run = async (args) => {
@@ -162,7 +162,13 @@ const run = async (args) => {
 
     const parsed = postcss.parse(raw)
 
-    build(results, name, parsed.nodes)
+    for (const {context, node} of build(parsed.nodes)) {
+      const group = get(results.tree, context)
+
+      if (group && Object.entries(group).find(([key, names]) => key.startsWith(`${node.prop}: `) && names.includes(name))) continue
+
+      set(results.tree, [...context, `${node.prop}: ${node.value}`], [name])
+    }
   }
 
   for (const [media, pseudos] of Object.entries(results.tree)) {
