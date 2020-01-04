@@ -1,4 +1,4 @@
-const erequire = require('esm')(module, {cache: false})
+const erequire = require('esm')(module)
 const path = require('path')
 const fs = require('fs')
 const stream = require('stream')
@@ -138,7 +138,7 @@ const build = (results, name, nodes) => {
 const run = async (args) => {
   let id = 0
 
-  const input = erequire(args.input).default
+  const input = erequire(`${args.input}?${Date.now()}`).default
 
   await mkdir(path.dirname(path.join(process.cwd(), args.output)), {recursive: true})
 
