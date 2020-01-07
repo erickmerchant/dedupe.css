@@ -4,30 +4,35 @@ css from js. atomic styles
 
 ``` js
 // input.js
-
 const desktop = '@media (min-width: 100px)'
 
-const bold = `
+const emphasis = `
+  font-weight: normal;
   font-weight: bold;
+  font-style: italic;
 `
 
-module.exports = {
+export default {
   _before: `
     p {
       margin-top: var(--spacing)
     }
   `,
   loud: `
-    ${bold}
+    ${emphasis}
     ${desktop} {
       font-size: 5em;
+
+      ::after {
+        content: '!!'
+      }
     }
     ::after {
-      content: '!';
+      content: '!'
     }
   `,
   button: `
-    ${bold}
+    ${emphasis}
     background: #ff8000;
     color: #111;
   `
@@ -36,37 +41,33 @@ module.exports = {
 
 ``` css
 /* output.css */
-
 p {
   margin-top: var(--spacing)
 }
 
-.a {
-  font-weight: bold
-}
-
-.b::after {
-  content: '!'
-}
-
-.c {
+.a { font-weight: bold; font-style: italic; }
+.b {
   background: #ff8000;
   color: #111;
 }
-
+.c::after {
+  content: '!';
+}
 @media (min-width: 100px) {
-  .b {
+  .c {
     font-size: 5em;
+  }
+  .c::after {
+    content: '!!';
   }
 }
 ```
 
 ``` mjs
 // output.mjs
-
 export const classes = {
-  loud: 'a b',
-  button: 'a c'
+  "loud": "a c",
+  "button": "a b"
 }
 ```
 
@@ -75,9 +76,9 @@ export const classes = {
 
 import {classes} from './output.mjs'
 
-classes.loud // 'a b'
+classes.loud // 'a c'
 
-classes.button // 'a c'
+classes.button // 'a b'
 ```
 
 ## usage

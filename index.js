@@ -8,6 +8,7 @@ const finished = promisify(stream.finished)
 const createWriteStream = fs.createWriteStream
 const mkdir = promisify(fs.mkdir)
 
+const shorthands = ['animation', 'background', 'border', 'border-bottom', 'border-color', 'border-left', 'border-radius', 'border-right', 'border-style', 'border-top', 'border-width', 'column-rule', 'columns', 'flex', 'flex-flow', 'font', 'grid', 'grid-area', 'grid-column', 'grid-row', 'grid-template', 'list-style', 'margin', 'offset', 'outline', 'overflow', 'padding', 'place-content', 'place-items', 'place-self', 'text-decoration', 'transition']
 const letters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
 const set = (obj, parts, value) => {
@@ -147,11 +148,9 @@ const run = async (args) => {
     js: createWriteStream(path.join(process.cwd(), `${args.output}.mjs`))
   }
 
-  const results = {
-    tree: {},
-    ids: {},
-    map: {}
-  }
+  const tree = {}
+  const ids = {}
+  const map = {}
 
   if (input._before) {
     output.css.write(`${outdent(input._before)}\n`)
@@ -163,15 +162,17 @@ const run = async (args) => {
     const parsed = postcss.parse(raw)
 
     for (const {context, node} of build(parsed.nodes)) {
-      const group = get(results.tree, context)
+      if (shorthands.includes(node.prop)) console.warn(`shorthand property ${node.prop} found`)
+
+      const group = get(tree, context)
 
       if (group && Object.entries(group).find(([key, names]) => key.startsWith(`${node.prop}: `) && names.includes(name))) continue
 
-      set(results.tree, [...context, `${node.prop}: ${node.value}`], [name])
+      set(tree, [...context, `${node.prop}: ${node.value}`], [name])
     }
   }
 
-  for (const [media, pseudos] of Object.entries(results.tree)) {
+  for (const [media, pseudos] of Object.entries(tree)) {
     let indent = ''
 
     if (media) {
@@ -206,7 +207,7 @@ const run = async (args) => {
           output.css.write(`${indent}.${cls}${pseudo} { ${decls.join('; ')}; }\n`)
 
           for (const name of names) {
-            set(results.map, [name], [cls])
+            set(map, [name], [cls])
           }
         } else {
           const name = names[0]
@@ -216,14 +217,14 @@ const run = async (args) => {
       }
 
       for (const [name, decls] of Object.entries(remainders)) {
-        if (results.ids[name] == null) {
-          results.ids[name] = base52(id++)
+        if (ids[name] == null) {
+          ids[name] = base52(id++)
         }
 
-        const cls = results.ids[name]
+        const cls = ids[name]
 
-        if (results.map[name] == null || !results.map[name].includes(cls)) {
-          set(results.map, [name], [cls])
+        if (map[name] == null || !map[name].includes(cls)) {
+          set(map, [name], [cls])
         }
 
         output.css.write(`${indent}.${cls}${pseudo} {\n`)
@@ -243,11 +244,11 @@ const run = async (args) => {
 
   output.css.end(input._after != null ? `${outdent(input._after)}\n` : '')
 
-  for (const name of Object.keys(results.map)) {
-    results.map[name] = results.map[name].join(' ')
+  for (const name of Object.keys(map)) {
+    map[name] = map[name].join(' ')
   }
 
-  output.js.end(`export const classes = ${JSON.stringify(results.map, null, 2)}`)
+  output.js.end(`export const classes = ${JSON.stringify(map, null, 2)}`)
 
   return Promise.all([
     finished(output.css),
