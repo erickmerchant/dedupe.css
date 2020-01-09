@@ -7,11 +7,12 @@ const emphasis = `
 `
 
 export default {
-  _before: `
+  _start: `
     p {
       margin-top: var(--spacing)
     }
   `,
+  _atrules: [desktop],
   loud: `
     ${emphasis}
     ${desktop} {

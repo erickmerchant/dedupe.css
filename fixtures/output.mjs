@@ -1,4 +1,4 @@
 export const classes = {
-  "loud": "a c",
-  "button": "a b"
+  "loud": "a b",
+  "button": "b c"
 }
