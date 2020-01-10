@@ -22,29 +22,6 @@ const isEqualArray = (a, b) => {
   return true
 }
 
-let id = 0
-const existingIds = []
-
-const uniqueId = () => {
-  let result = ''
-
-  do {
-    let i = ++id
-    result = ''
-
-    let r
-
-    do {
-      r = i % 52
-      i = (i - r) / 52
-
-      result += letters[r]
-    } while (i)
-  } while (existingIds.includes(result))
-
-  return result
-}
-
 const processNodes = (nodes, inPseudo = false, base = []) => {
   const results = []
 
@@ -93,6 +70,29 @@ const processSelectors = (node) => {
 }
 
 const run = async (args) => {
+  let id = 0
+  const existingIds = []
+
+  const uniqueId = () => {
+    let result = ''
+
+    do {
+      let i = ++id
+      result = ''
+
+      let r
+
+      do {
+        r = i % 52
+        i = (i - r) / 52
+
+        result += letters[r]
+      } while (i)
+    } while (existingIds.includes(result))
+
+    return result
+  }
+
   const input = esimport(`${args.input}?${Date.now()}`).default
 
   await mkdir(path.dirname(path.join(process.cwd(), args.output)), {recursive: true})
