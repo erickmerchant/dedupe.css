@@ -4,6 +4,7 @@ const fs = require('fs')
 const stream = require('stream')
 const promisify = require('util').promisify
 const postcss = require('postcss')
+const selectorTokenizer = require('css-selector-tokenizer')
 const finished = promisify(stream.finished)
 const createWriteStream = fs.createWriteStream
 const mkdir = promisify(fs.mkdir)
@@ -11,7 +12,7 @@ const mkdir = promisify(fs.mkdir)
 const shorthands = ['animation', 'background', 'border', 'border-bottom', 'border-color', 'border-left', 'border-radius', 'border-right', 'border-style', 'border-top', 'border-width', 'column-rule', 'columns', 'flex', 'flex-flow', 'font', 'grid', 'grid-area', 'grid-column', 'grid-row', 'grid-template', 'list-style', 'margin', 'offset', 'outline', 'overflow', 'padding', 'place-content', 'place-items', 'place-self', 'text-decoration', 'transition']
 const letters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
-const equal = (a, b) => {
+const isEqualArray = (a, b) => {
   if (a.length !== b.length) return false
 
   for (let i = 0; i < a.length; i++) {
@@ -21,21 +22,30 @@ const equal = (a, b) => {
   return true
 }
 
-const base52 = (i) => {
-  let r
+let id = 0
+const existingIds = []
+
+const uniqueId = () => {
   let result = ''
 
   do {
-    r = i % 52
-    i = (i - r) / 52
+    let i = ++id
+    result = ''
 
-    result += letters[r]
-  } while (i)
+    let r
+
+    do {
+      r = i % 52
+      i = (i - r) / 52
+
+      result += letters[r]
+    } while (i)
+  } while (existingIds.includes(result))
 
   return result
 }
 
-const traverse = (nodes, inPseudo = false, base = []) => {
+const processNodes = (nodes, inPseudo = false, base = []) => {
   const results = []
 
   for (const node of nodes.reverse()) {
@@ -45,11 +55,37 @@ const traverse = (nodes, inPseudo = false, base = []) => {
         node
       })
     } else if (node.type === 'atrule') {
-      results.push(...traverse(node.nodes, inPseudo, [...base, `@${node.name} ${node.params}`]))
+      results.push(...processNodes(node.nodes, inPseudo, [...base, `@${node.name} ${node.params}`]))
     } else if (node.type === 'rule') {
-      if (inPseudo) throw Error('nested pseudos are not allowed')
+      if (inPseudo) throw Error('nested rule found')
 
-      results.push(...traverse(node.nodes, false, [...base, node.selector]))
+      const parsed = selectorTokenizer.parse(node.selector)
+
+      for (const n of parsed.nodes) {
+        if (n.nodes.filter((n) => n.type === 'spacing' || n.type.includes('pseudo')).length !== n.nodes.length) {
+          throw Error('non-pseudo selector found')
+        }
+
+        results.push(...processNodes(node.nodes, false, [...base, selectorTokenizer.stringify(n).trim()]))
+      }
+    }
+  }
+
+  return results
+}
+
+const processSelectors = (node) => {
+  const results = []
+
+  if (node.nodes) {
+    for (const n of node.nodes) {
+      if (n.type === 'class') {
+        results.push(n.name)
+      }
+
+      if (n.nodes) {
+        results.push(...processSelectors(n))
+      }
     }
   }
 
@@ -57,8 +93,6 @@ const traverse = (nodes, inPseudo = false, base = []) => {
 }
 
 const run = async (args) => {
-  let id = 0
-
   const input = esimport(`${args.input}?${Date.now()}`).default
 
   await mkdir(path.dirname(path.join(process.cwd(), args.output)), {recursive: true})
@@ -74,6 +108,20 @@ const run = async (args) => {
 
   if (input._start) {
     output.css.write(input._start)
+
+    postcss.parse(input._start).walkRules((rule) => {
+      const parsed = selectorTokenizer.parse(rule.selector)
+
+      existingIds.push(...processSelectors(parsed))
+    })
+  }
+
+  if (input._end) {
+    postcss.parse(input._end).walkRules((rule) => {
+      const parsed = selectorTokenizer.parse(rule.selector)
+
+      existingIds.push(...processSelectors(parsed))
+    })
   }
 
   for (const [name, raw] of Object.entries(input)) {
@@ -81,10 +129,10 @@ const run = async (args) => {
 
     const parsed = postcss.parse(raw)
 
-    for (const {context, node} of traverse(parsed.nodes)) {
+    for (const {context, node} of processNodes(parsed.nodes)) {
       if (shorthands.includes(node.prop)) console.warn(`shorthand property ${node.prop} found`)
 
-      let index = tree.findIndex((branch) => equal(branch.context, context))
+      let index = tree.findIndex((branch) => isEqualArray(branch.context, context))
 
       if (index < 0) {
         index = tree.length
@@ -127,13 +175,13 @@ const run = async (args) => {
       const [decl, names] = entries.shift()
 
       if (names.length > 1) {
-        const cls = base52(id++)
+        const cls = uniqueId()
 
         const decls = [decl]
         let i = 0
 
         while (i < entries.length) {
-          if (equal(entries[i][1], names)) {
+          if (isEqualArray(entries[i][1], names)) {
             decls.push(entries[i][0])
 
             entries.splice(i, 1)
@@ -160,7 +208,7 @@ const run = async (args) => {
 
     for (const [name, decls] of Object.entries(remainders)) {
       if (ids[name] == null) {
-        ids[name] = base52(id++)
+        ids[name] = uniqueId()
       }
 
       const cls = ids[name]

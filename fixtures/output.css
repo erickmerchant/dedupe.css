@@ -2,4 +2,8 @@
     p {
       margin-top: var(--spacing)
     }
-  .a::after {content: '!';}.b { font-style: italic; font-weight: bold; }.c {color: #111;background: #ff8000;}@media (min-width: 100px) {.a::after {content: '!!';}}@media (min-width: 100px) {.a {font-size: 5em;}}
+
+    .a {
+      padding: 1em;
+    }
+  .b::after {content: '!';}.c { font-style: italic; font-weight: bold; }.d {color: #111;background: #ff8000;}@media (min-width: 100px) {.b::after {content: '!!';}}@media (min-width: 100px) {.b {font-size: 5em;}}

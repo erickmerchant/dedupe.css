@@ -11,6 +11,10 @@ export default {
     p {
       margin-top: var(--spacing)
     }
+
+    .a {
+      padding: 1em;
+    }
   `,
   _atrules: [desktop],
   loud: `
