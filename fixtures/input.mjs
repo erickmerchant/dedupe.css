@@ -1,4 +1,5 @@
 const desktop = '@media (min-width: 100px)'
+const grid = '@supports (display: grid)'
 
 const emphasis = `
   font-weight: normal;
@@ -16,7 +17,6 @@ export default {
       padding: 1em;
     }
   `,
-  _atrules: [desktop],
   loud: `
     ${emphasis}
     ${desktop} {
@@ -32,7 +32,16 @@ export default {
   `,
   button: `
     ${emphasis}
-    background: #ff8000;
+    background-color: #ff8000;
     color: #111;
+  `,
+  grid: `
+    ${desktop} {
+      ${grid} {
+        display: grid;
+      }
+
+      display: flex;
+    }
   `
 }

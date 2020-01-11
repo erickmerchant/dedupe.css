@@ -22,19 +22,25 @@ const isEqualArray = (a, b) => {
   return true
 }
 
-const processNodes = (nodes, inPseudo = false, base = []) => {
+const processNodes = (nodes, selector = '', template = '{}') => {
   const results = []
 
-  for (const node of nodes.reverse()) {
+  for (const node of nodes) {
     if (node.type === 'decl') {
+      if (shorthands.includes(node.prop)) {
+        console.warn(`shorthand property ${node.prop} found`)
+      }
+
       results.push({
-        context: base,
-        node
+        template,
+        selector,
+        prop: node.prop,
+        value: node.value
       })
     } else if (node.type === 'atrule') {
-      results.push(...processNodes(node.nodes, inPseudo, [...base, `@${node.name} ${node.params}`]))
+      results.push(...processNodes(node.nodes, selector, template.replace('{}', `{ @${node.name} ${node.params} {} }`)))
     } else if (node.type === 'rule') {
-      if (inPseudo) throw Error('nested rule found')
+      if (selector) throw Error('nested rule found')
 
       const parsed = selectorTokenizer.parse(node.selector)
 
@@ -43,7 +49,9 @@ const processNodes = (nodes, inPseudo = false, base = []) => {
           throw Error('non-pseudo selector found')
         }
 
-        results.push(...processNodes(node.nodes, false, [...base, selectorTokenizer.stringify(n).trim()]))
+        selector = selectorTokenizer.stringify(n).trim()
+
+        results.push(...processNodes(node.nodes, selector, template))
       }
     }
   }
@@ -102,9 +110,9 @@ const run = async (args) => {
     js: createWriteStream(path.join(process.cwd(), `${args.output}.mjs`))
   }
 
-  const ids = {}
   const map = {}
-  let tree = []
+  const tree = {}
+  const ids = {}
 
   if (input._start) {
     output.css.write(input._start)
@@ -129,68 +137,52 @@ const run = async (args) => {
 
     const parsed = postcss.parse(raw)
 
-    for (const {context, node} of processNodes(parsed.nodes)) {
-      if (shorthands.includes(node.prop)) console.warn(`shorthand property ${node.prop} found`)
+    for (const {template, selector, prop, value} of processNodes(parsed.nodes)) {
+      tree[template] = tree[template] || []
 
-      let index = tree.findIndex((branch) => isEqualArray(branch.context, context))
+      const index = tree[template].findIndex((r) => r.selector === selector && r.prop === prop && r.value === value)
 
       if (index < 0) {
-        index = tree.length
-
-        tree.push({
-          context,
-          decls: {}
+        tree[template].push({
+          names: [name],
+          selector,
+          prop,
+          value
         })
+      } else {
+        tree[template][index].names.push(name)
       }
-
-      const decls = tree[index].decls
-
-      if (Object.entries(decls).find(([key, names]) => key.startsWith(`${node.prop}: `) && names.includes(name))) continue
-
-      const decl = `${node.prop}: ${node.value}`
-
-      decls[decl] = decls[decl] || []
-
-      decls[decl].push(name)
     }
   }
 
-  const atrules = input._atrules || []
+  for (const template of Object.keys(tree)) {
+    const branch = tree[template]
+    const remainders = []
+    const rules = []
 
-  for (const atrule of atrules) {
-    tree = tree.sort((a, b) => a.context.indexOf(atrule) - b.context.indexOf(atrule))
-  }
-
-  for (const branch of tree) {
-    const remainders = {}
-    const entries = Object.entries(branch.decls)
-    const pseudo = branch.context.find((c) => !c.startsWith('@')) || ''
-    const atrules = branch.context.filter((c) => c.startsWith('@'))
-
-    for (const atrule of atrules) {
-      output.css.write(`${atrule} {`)
-    }
-
-    while (entries.length) {
-      const [decl, names] = entries.shift()
+    while (branch.length) {
+      const {selector, prop, value, names} = branch.shift()
 
       if (names.length > 1) {
         const cls = uniqueId()
 
-        const decls = [decl]
+        const decls = {
+          [prop]: value
+        }
+
         let i = 0
 
-        while (i < entries.length) {
-          if (isEqualArray(entries[i][1], names)) {
-            decls.push(entries[i][0])
+        while (i < branch.length) {
+          if (isEqualArray(branch[i].names, names) && branch[i].selector === selector) {
+            decls[branch[i].prop] = branch[i].value
 
-            entries.splice(i, 1)
+            branch.splice(i, 1)
           } else {
             i++
           }
         }
 
-        output.css.write(`.${cls}${pseudo} { ${decls.join('; ')}; }`)
+        rules.push(`.${cls}${selector} { ${Object.keys(decls).map((prop) => `${prop}: ${decls[prop]}`).join('; ')}; }`)
 
         for (const name of names) {
           map[name] = map[name] || []
@@ -200,37 +192,43 @@ const run = async (args) => {
       } else {
         const name = names[0]
 
-        remainders[name] = remainders[name] || []
-
-        remainders[name].push(decl)
+        remainders.push({selector, name, prop, value})
       }
     }
 
-    for (const [name, decls] of Object.entries(remainders)) {
-      if (ids[name] == null) {
-        ids[name] = uniqueId()
+    while (remainders.length) {
+      const {selector, prop, value, name} = remainders.shift()
+      const cls = ids[name] || uniqueId()
+
+      ids[name] = cls
+
+      const decls = {
+        [prop]: value
+      }
+      let i = 0
+
+      while (i < remainders.length) {
+        if (remainders[i].name === name && remainders[i].selector === selector) {
+          decls[remainders[i].prop] = remainders[i].value
+
+          remainders.splice(i, 1)
+        } else {
+          i++
+        }
       }
 
-      const cls = ids[name]
+      rules.push(`.${cls}${selector} { ${Object.keys(decls).map((prop) => `${prop}: ${decls[prop]}`).join('; ')}; }`)
 
-      if (map[name] == null || !map[name].includes(cls)) {
-        map[name] = map[name] || []
+      map[name] = map[name] || []
 
+      if (!map[name].includes(cls)) {
         map[name].push(cls)
       }
-
-      output.css.write(`.${cls}${pseudo} {`)
-
-      for (const decl of decls) {
-        output.css.write(`${decl};`)
-      }
-
-      output.css.write('}')
     }
 
-    for (let i = 0; i < atrules.length; i++) {
-      output.css.write('}')
-    }
+    const line = template.replace('{}', `{ ${rules.join('')} }`)
+
+    output.css.write(line.substring(2, line.length - 2))
   }
 
   output.css.end(input._end != null ? input._end : '')

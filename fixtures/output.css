@@ -6,4 +6,4 @@
     .a {
       padding: 1em;
     }
-  .b::after {content: '!';}.c { font-style: italic; font-weight: bold; }.d {color: #111;background: #ff8000;}@media (min-width: 100px) {.b::after {content: '!!';}}@media (min-width: 100px) {.b {font-size: 5em;}}
+  .b { font-weight: bold; font-style: italic; }.c::after { content: '!'; }.d { background-color: #ff8000; color: #111; }@media (min-width: 100px) { .c { font-size: 5em; }.c::after { content: '!!'; }.e { display: flex; } }@media (min-width: 100px) { @supports (display: grid) { .e { display: grid; } } }
