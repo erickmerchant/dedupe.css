@@ -49,9 +49,7 @@ const processNodes = (nodes, selector = '', template = '{}') => {
           throw Error('non-pseudo selector found')
         }
 
-        selector = selectorTokenizer.stringify(n).trim()
-
-        results.push(...processNodes(node.nodes, selector, template))
+        results.push(...processNodes(node.nodes, selectorTokenizer.stringify(n).trim(), template))
       }
     }
   }
