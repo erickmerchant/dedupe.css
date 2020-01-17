@@ -1,4 +1,4 @@
-const esimport = require('esm')(module)
+const _import = require('esm')(module)
 const path = require('path')
 const fs = require('fs')
 const stream = require('stream')
@@ -99,7 +99,7 @@ const run = async (args) => {
     return result
   }
 
-  const input = esimport(`${args.input}?${Date.now()}`).default
+  const input = _import(`${args.input}?${Date.now()}`).default
 
   await mkdir(path.dirname(path.join(process.cwd(), args.output)), {recursive: true})
 
