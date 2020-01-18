@@ -1,6 +1,6 @@
 # @erickmerchant/css
 
-css from js. atomic styles
+css from js
 
 ``` js
 // input.js
@@ -12,12 +12,13 @@ const emphasis = `
   font-style: italic;
 `
 
-export default {
-  _before: `
-    p {
-      margin-top: var(--spacing)
-    }
-  `,
+export const _start = `
+  p {
+    margin-top: var(--spacing)
+  }
+`
+
+export const styles = {
   loud: `
     ${emphasis}
     ${desktop} {

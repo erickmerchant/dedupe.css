@@ -7,16 +7,17 @@ const emphasis = `
   font-style: italic;
 `
 
-export default {
-  _start: `
-    p {
-      margin-top: var(--spacing)
-    }
+export const _start = `
+  p {
+    margin-top: var(--spacing)
+  }
 
-    .a {
-      padding: 1em;
-    }
-  `,
+  .a {
+    padding: 1em;
+  }
+`
+
+export const styles = {
   loud: `
     ${emphasis}
     ${desktop} {

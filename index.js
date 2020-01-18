@@ -99,7 +99,7 @@ const run = async (args) => {
     return result
   }
 
-  const input = _import(`${args.input}?${Date.now()}`).default
+  const input = _import(`${args.input}?${Date.now()}`)
 
   await mkdir(path.dirname(path.join(process.cwd(), args.output)), {recursive: true})
 
@@ -130,9 +130,7 @@ const run = async (args) => {
     })
   }
 
-  for (const [name, raw] of Object.entries(input)) {
-    if (name.startsWith('_')) continue
-
+  for (const [name, raw] of Object.entries(input.styles)) {
     const parsed = postcss.parse(raw)
 
     for (const {template, selector, prop, value} of processNodes(parsed.nodes)) {
