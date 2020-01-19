@@ -83,7 +83,7 @@ const run = async (args) => {
     let result = ''
 
     do {
-      let i = ++id
+      let i = id++
       result = ''
 
       let r
