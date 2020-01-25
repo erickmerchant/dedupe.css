@@ -4,13 +4,165 @@ const fs = require('fs')
 const stream = require('stream')
 const promisify = require('util').promisify
 const postcss = require('postcss')
+const valueParser = require('postcss-value-parser')
 const selectorTokenizer = require('css-selector-tokenizer')
 const finished = promisify(stream.finished)
-const createWriteStream = fs.createWriteStream
 const mkdir = promisify(fs.mkdir)
+const createWriteStream = fs.createWriteStream
 
-const shorthands = ['animation', 'background', 'border', 'border-bottom', 'border-color', 'border-left', 'border-radius', 'border-right', 'border-style', 'border-top', 'border-width', 'column-rule', 'columns', 'flex', 'flex-flow', 'font', 'grid', 'grid-area', 'grid-column', 'grid-row', 'grid-template', 'list-style', 'margin', 'offset', 'outline', 'overflow', 'padding', 'place-content', 'place-items', 'place-self', 'text-decoration', 'transition']
+const shorthands = ['animation', 'background', 'border', 'border-bottom', 'border-left', 'border-right', 'border-top', 'column-rule', 'columns', 'flex', 'flex-flow', 'font', 'grid', 'grid-area', 'grid-column', 'grid-row', 'grid-template', 'list-style', 'offset', 'outline', 'place-content', 'place-items', 'place-self', 'text-decoration', 'transition']
+
 const letters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+
+const letterCount = letters.length
+
+const stringify = (node) => valueParser.stringify(node)
+
+const filterSpaces = (nodes) => nodes.filter((node) => node.type !== 'space')
+
+const directionalCollapser = (key, [top, right, bottom, left]) => (decls) => {
+  if (decls[top] != null && decls[right] != null && decls[bottom] != null && decls[left] != null) {
+    if (decls[top] === decls[right] && decls[top] === decls[bottom] && decls[top] === decls[left]) {
+      decls[key] = decls[top]
+    } else if (decls[top] === decls[bottom] && decls[right] === decls[left]) {
+      decls[key] = `${decls[top]} ${decls[right]}`
+    } else if (decls[right] === decls[left]) {
+      decls[key] = `${decls[top]} ${decls[right]} ${decls[bottom]}`
+    } else {
+      decls[key] = `${decls[top]} ${decls[right]} ${decls[bottom]} ${decls[left]}`
+    }
+
+    delete decls[top]
+    delete decls[right]
+    delete decls[bottom]
+    delete decls[left]
+  }
+}
+
+const directionalExpander = ([top, right, bottom, left]) => (nodes) => {
+  const values = filterSpaces(nodes).map(stringify)
+
+  if (!values.length || values.length > 4) {
+    return
+  }
+
+  const result = {}
+
+  result[top] = values[0]
+
+  if (values.length >= 2) {
+    result[right] = values[1]
+  }
+
+  if (values.length >= 3) {
+    result[bottom] = values[2]
+  }
+
+  if (values.length === 4) {
+    result[left] = values[3]
+  }
+
+  if (values.length === 3 || values.length === 2) {
+    result[left] = values[1]
+  }
+
+  if (values.length <= 2) {
+    result[bottom] = values[0]
+  }
+
+  if (values.length === 1) {
+    result[right] = values[0]
+    result[left] = values[0]
+  }
+
+  return result
+}
+
+const dirs = ['top', 'right', 'bottom', 'left']
+
+const borderRadiusDirs = ['border-top-left-radius', 'border-top-right-radius', 'border-bottom-right-radius', 'border-bottom-left-radius']
+
+const collapsers = [
+  directionalCollapser('border-color', dirs.map((dir) => `border-${dir}-color`)),
+  directionalCollapser('border-style', dirs.map((dir) => `border-${dir}-style`)),
+  directionalCollapser('border-width', dirs.map((dir) => `border-${dir}-width`)),
+  directionalCollapser('margin', dirs.map((dir) => `margin-${dir}`)),
+  directionalCollapser('padding', dirs.map((dir) => `padding-${dir}`)),
+  (decls) => {
+    const bDecls = {}
+    const collapser = directionalCollapser('border-radius', borderRadiusDirs)
+
+    for (const borderRadiusDir of borderRadiusDirs) {
+      if (decls[borderRadiusDir] == null) return
+
+      const split = decls[borderRadiusDir].split(' ')
+
+      if (split.length > 2) return
+
+      if (split.length === 2) {
+        decls[borderRadiusDir] = split[0]
+        bDecls[borderRadiusDir] = split[1]
+      }
+    }
+
+    collapser(decls)
+
+    collapser(bDecls)
+
+    if (bDecls['border-radius'] != null) {
+      decls['border-radius'] = `${decls['border-radius']} / ${bDecls['border-radius']}`
+    }
+  },
+  (decls) => {
+    if (decls['overflow-x'] != null && decls['overflow-y'] != null) {
+      decls.overflow = `${decls['overflow-x']} ${decls['overflow-y']}`
+
+      delete decls['overflow-x']
+      delete decls['overflow-y']
+    }
+  }
+]
+
+const expanders = {
+  'border-color': directionalExpander(dirs.map((dir) => `border-${dir}-color`)),
+  'border-style': directionalExpander(dirs.map((dir) => `border-${dir}-style`)),
+  'border-width': directionalExpander(dirs.map((dir) => `border-${dir}-width`)),
+  margin: directionalExpander(dirs.map((dir) => `margin-${dir}`)),
+  padding: directionalExpander(dirs.map((dir) => `padding-${dir}`)),
+  'border-radius'(nodes) {
+    const expander = directionalExpander(borderRadiusDirs)
+    const slashIndex = nodes.findIndex((node) => node.type === 'div')
+    let bResult
+
+    if (slashIndex > -1) {
+      bResult = expander(nodes.slice(slashIndex + 1))
+
+      nodes = nodes.slice(0, slashIndex)
+    }
+
+    const result = expander(nodes)
+
+    if (bResult) {
+      for (const borderRadiusDir of borderRadiusDirs) {
+        result[borderRadiusDir] = `${result[borderRadiusDir]} ${bResult[borderRadiusDir]}`
+      }
+    }
+
+    return result
+  },
+  overflow(nodes) {
+    const values = filterSpaces(nodes).map(stringify)
+
+    if (!values.length || values.length > 2) {
+      return
+    }
+
+    return {
+      'overflow-x': values[0],
+      'overflow-y': values[1] != null ? values[1] : values[0]
+    }
+  }
+}
 
 const isEqualArray = (a, b) => {
   if (a.length !== b.length) return false
@@ -27,7 +179,28 @@ const processNodes = (nodes, selector = '', template = '{}') => {
 
   for (const node of nodes) {
     if (node.type === 'decl') {
-      if (shorthands.includes(node.prop)) {
+      if (expanders[node.prop]) {
+        const parsed = valueParser(node.value)
+
+        let expanded
+
+        if (expanders[node.prop] != null) {
+          expanded = expanders[node.prop](parsed.nodes)
+
+          if (expanded) {
+            for (const [prop, value] of Object.entries(expanded)) {
+              results.push({
+                template,
+                selector,
+                prop,
+                value
+              })
+            }
+
+            continue
+          }
+        }
+      } else if (shorthands.includes(node.prop)) {
         console.warn(`shorthand property ${node.prop} found`)
       }
 
@@ -89,8 +262,8 @@ const run = async (args) => {
       let r
 
       do {
-        r = i % 52
-        i = (i - r) / 52
+        r = i % letterCount
+        i = (i - r) / letterCount
 
         result += letters[r]
       } while (i)
@@ -178,6 +351,10 @@ const run = async (args) => {
           }
         }
 
+        for (const collapser of collapsers) {
+          collapser(decls)
+        }
+
         rules.push(`.${cls}${selector} { ${Object.keys(decls).map((prop) => `${prop}: ${decls[prop]}`).join('; ')}; }`)
 
         for (const name of names) {
@@ -211,6 +388,10 @@ const run = async (args) => {
         } else {
           i++
         }
+      }
+
+      for (const collapser of collapsers) {
+        collapser(decls)
       }
 
       rules.push(`.${cls}${selector} { ${Object.keys(decls).map((prop) => `${prop}: ${decls[prop]}`).join('; ')}; }`)
