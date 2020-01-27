@@ -17,7 +17,7 @@
     "css": "./cli.js"
   },
   "scripts": {
-    "pretest": "lint *.js",
+    "pretest": "lint *.js lib/*.js lib/**/*.js",
     "test": "tape test.js"
   },
   "dependencies": {
@@ -25,7 +25,7 @@
     "esm": "^3.2.25",
     "postcss": "^7.0.26",
     "postcss-value-parser": "^4.0.2",
-    "sergeant": "^27.2.1"
+    "sergeant": "^27.2.2"
   },
   "devDependencies": {
     "@erickmerchant/lint": "^4.0.0",

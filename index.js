@@ -10,159 +10,21 @@ const finished = promisify(stream.finished)
 const mkdir = promisify(fs.mkdir)
 const createWriteStream = fs.createWriteStream
 
-const shorthands = ['animation', 'background', 'border', 'border-bottom', 'border-left', 'border-right', 'border-top', 'column-rule', 'columns', 'flex', 'flex-flow', 'font', 'grid', 'grid-area', 'grid-column', 'grid-row', 'grid-template', 'list-style', 'offset', 'outline', 'place-content', 'place-items', 'place-self', 'text-decoration', 'transition']
+const unsupportedShorthands = ['animation', 'background', 'border', 'border-bottom', 'border-left', 'border-right', 'border-top', 'column-rule', 'columns', 'flex', 'flex-flow', 'font', 'grid', 'grid-area', 'grid-column', 'grid-row', 'grid-template', 'list-style', 'offset', 'outline', 'place-content', 'place-items', 'place-self', 'text-decoration', 'transition']
+
+const supportedShorthands = {
+  'border-color': require('./lib/shorthands/border-color.js'),
+  'border-radius': require('./lib/shorthands/border-radius.js'),
+  'border-style': require('./lib/shorthands/border-style.js'),
+  'border-width': require('./lib/shorthands/border-width.js'),
+  margin: require('./lib/shorthands/margin.js'),
+  overflow: require('./lib/shorthands/overflow.js'),
+  padding: require('./lib/shorthands/padding.js')
+}
 
 const letters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
 const letterCount = letters.length
-
-const stringify = (node) => valueParser.stringify(node)
-
-const filterSpaces = (nodes) => nodes.filter((node) => node.type !== 'space')
-
-const directionalCollapser = (key, [top, right, bottom, left]) => (decls) => {
-  if (decls[top] != null && decls[right] != null && decls[bottom] != null && decls[left] != null) {
-    if (decls[top] === decls[right] && decls[top] === decls[bottom] && decls[top] === decls[left]) {
-      decls[key] = decls[top]
-    } else if (decls[top] === decls[bottom] && decls[right] === decls[left]) {
-      decls[key] = `${decls[top]} ${decls[right]}`
-    } else if (decls[right] === decls[left]) {
-      decls[key] = `${decls[top]} ${decls[right]} ${decls[bottom]}`
-    } else {
-      decls[key] = `${decls[top]} ${decls[right]} ${decls[bottom]} ${decls[left]}`
-    }
-
-    delete decls[top]
-    delete decls[right]
-    delete decls[bottom]
-    delete decls[left]
-  }
-}
-
-const directionalExpander = ([top, right, bottom, left]) => (nodes) => {
-  const values = filterSpaces(nodes).map(stringify)
-
-  if (!values.length || values.length > 4) {
-    return
-  }
-
-  const result = {}
-
-  result[top] = values[0]
-
-  if (values.length >= 2) {
-    result[right] = values[1]
-  }
-
-  if (values.length >= 3) {
-    result[bottom] = values[2]
-  }
-
-  if (values.length === 4) {
-    result[left] = values[3]
-  }
-
-  if (values.length === 3 || values.length === 2) {
-    result[left] = values[1]
-  }
-
-  if (values.length <= 2) {
-    result[bottom] = values[0]
-  }
-
-  if (values.length === 1) {
-    result[right] = values[0]
-    result[left] = values[0]
-  }
-
-  return result
-}
-
-const dirs = ['top', 'right', 'bottom', 'left']
-
-const borderRadiusDirs = ['border-top-left-radius', 'border-top-right-radius', 'border-bottom-right-radius', 'border-bottom-left-radius']
-
-const collapsers = [
-  directionalCollapser('border-color', dirs.map((dir) => `border-${dir}-color`)),
-  directionalCollapser('border-style', dirs.map((dir) => `border-${dir}-style`)),
-  directionalCollapser('border-width', dirs.map((dir) => `border-${dir}-width`)),
-  directionalCollapser('margin', dirs.map((dir) => `margin-${dir}`)),
-  directionalCollapser('padding', dirs.map((dir) => `padding-${dir}`)),
-  (decls) => {
-    const bDecls = {}
-    const collapser = directionalCollapser('border-radius', borderRadiusDirs)
-
-    for (const borderRadiusDir of borderRadiusDirs) {
-      if (decls[borderRadiusDir] == null) return
-
-      const split = decls[borderRadiusDir].split(' ')
-
-      if (split.length > 2) return
-
-      if (split.length === 2) {
-        decls[borderRadiusDir] = split[0]
-        bDecls[borderRadiusDir] = split[1]
-      }
-    }
-
-    collapser(decls)
-
-    collapser(bDecls)
-
-    if (bDecls['border-radius'] != null) {
-      decls['border-radius'] = `${decls['border-radius']} / ${bDecls['border-radius']}`
-    }
-  },
-  (decls) => {
-    if (decls['overflow-x'] != null && decls['overflow-y'] != null) {
-      decls.overflow = `${decls['overflow-x']} ${decls['overflow-y']}`
-
-      delete decls['overflow-x']
-      delete decls['overflow-y']
-    }
-  }
-]
-
-const expanders = {
-  'border-color': directionalExpander(dirs.map((dir) => `border-${dir}-color`)),
-  'border-style': directionalExpander(dirs.map((dir) => `border-${dir}-style`)),
-  'border-width': directionalExpander(dirs.map((dir) => `border-${dir}-width`)),
-  margin: directionalExpander(dirs.map((dir) => `margin-${dir}`)),
-  padding: directionalExpander(dirs.map((dir) => `padding-${dir}`)),
-  'border-radius'(nodes) {
-    const expander = directionalExpander(borderRadiusDirs)
-    const slashIndex = nodes.findIndex((node) => node.type === 'div')
-    let bResult
-
-    if (slashIndex > -1) {
-      bResult = expander(nodes.slice(slashIndex + 1))
-
-      nodes = nodes.slice(0, slashIndex)
-    }
-
-    const result = expander(nodes)
-
-    if (bResult) {
-      for (const borderRadiusDir of borderRadiusDirs) {
-        result[borderRadiusDir] = `${result[borderRadiusDir]} ${bResult[borderRadiusDir]}`
-      }
-    }
-
-    return result
-  },
-  overflow(nodes) {
-    const values = filterSpaces(nodes).map(stringify)
-
-    if (!values.length || values.length > 2) {
-      return
-    }
-
-    return {
-      'overflow-x': values[0],
-      'overflow-y': values[1] != null ? values[1] : values[0]
-    }
-  }
-}
 
 const isEqualArray = (a, b) => {
   if (a.length !== b.length) return false
@@ -175,43 +37,45 @@ const isEqualArray = (a, b) => {
 }
 
 const processNodes = (nodes, selector = '', template = '{}') => {
-  const results = []
+  let results = {}
 
   for (const node of nodes) {
     if (node.type === 'decl') {
-      if (expanders[node.prop]) {
+      if (supportedShorthands[node.prop]) {
         const parsed = valueParser(node.value)
 
-        let expanded
+        const expanded = supportedShorthands[node.prop].expand(parsed.nodes)
 
-        if (expanders[node.prop] != null) {
-          expanded = expanders[node.prop](parsed.nodes)
-
-          if (expanded) {
-            for (const [prop, value] of Object.entries(expanded)) {
-              results.push({
-                template,
-                selector,
-                prop,
-                value
-              })
+        if (expanded) {
+          for (const [prop, value] of Object.entries(expanded)) {
+            results[`${template} ${selector} ${prop}`] = {
+              template,
+              selector,
+              prop,
+              value
             }
-
-            continue
           }
+
+          continue
         }
-      } else if (shorthands.includes(node.prop)) {
+      } else if (unsupportedShorthands.includes(node.prop)) {
         console.warn(`shorthand property ${node.prop} found`)
       }
 
-      results.push({
+      const prop = node.prop
+      const value = node.value
+
+      results[`${template} ${selector} ${prop}`] = {
         template,
         selector,
-        prop: node.prop,
-        value: node.value
-      })
+        prop,
+        value
+      }
     } else if (node.type === 'atrule') {
-      results.push(...processNodes(node.nodes, selector, template.replace('{}', `{ @${node.name} ${node.params} {} }`)))
+      results = {
+        ...results,
+        ...processNodes(node.nodes, selector, template.replace('{}', `{ @${node.name} ${node.params} {} }`))
+      }
     } else if (node.type === 'rule') {
       if (selector) throw Error('nested rule found')
 
@@ -222,7 +86,10 @@ const processNodes = (nodes, selector = '', template = '{}') => {
           throw Error('non-pseudo selector found')
         }
 
-        results.push(...processNodes(node.nodes, selectorTokenizer.stringify(n).trim(), template))
+        results = {
+          ...results,
+          ...processNodes(node.nodes, selectorTokenizer.stringify(n).trim(), template)
+        }
       }
     }
   }
@@ -306,7 +173,7 @@ const run = async (args) => {
   for (const [name, raw] of Object.entries(input.styles)) {
     const parsed = postcss.parse(raw)
 
-    for (const {template, selector, prop, value} of processNodes(parsed.nodes)) {
+    for (const {template, selector, prop, value} of Object.values(processNodes(parsed.nodes))) {
       tree[template] = tree[template] || []
 
       const index = tree[template].findIndex((r) => r.selector === selector && r.prop === prop && r.value === value)
@@ -326,7 +193,7 @@ const run = async (args) => {
 
   for (const template of Object.keys(tree)) {
     const branch = tree[template]
-    const remainders = []
+    const remainders = {}
     const rules = []
 
     while (branch.length) {
@@ -351,8 +218,8 @@ const run = async (args) => {
           }
         }
 
-        for (const collapser of collapsers) {
-          collapser(decls)
+        for (const shorthand of Object.values(supportedShorthands)) {
+          shorthand.collapse(decls)
         }
 
         rules.push(`.${cls}${selector} { ${Object.keys(decls).map((prop) => `${prop}: ${decls[prop]}`).join('; ')}; }`)
@@ -365,33 +232,25 @@ const run = async (args) => {
       } else {
         const name = names[0]
 
-        remainders.push({selector, name, prop, value})
+        if (remainders[`${selector} ${name}`] == null) {
+          remainders[`${selector} ${name}`] = {
+            selector,
+            name,
+            decls: {}
+          }
+        }
+
+        remainders[`${selector} ${name}`].decls[prop] = value
       }
     }
 
-    while (remainders.length) {
-      const {selector, prop, value, name} = remainders.shift()
+    for (const {selector, name, decls} of Object.values(remainders)) {
       const cls = ids[name] || uniqueId()
 
       ids[name] = cls
 
-      const decls = {
-        [prop]: value
-      }
-      let i = 0
-
-      while (i < remainders.length) {
-        if (remainders[i].name === name && remainders[i].selector === selector) {
-          decls[remainders[i].prop] = remainders[i].value
-
-          remainders.splice(i, 1)
-        } else {
-          i++
-        }
-      }
-
-      for (const collapser of collapsers) {
-        collapser(decls)
+      for (const shorthand of Object.values(supportedShorthands)) {
+        shorthand.collapse(decls)
       }
 
       rules.push(`.${cls}${selector} { ${Object.keys(decls).map((prop) => `${prop}: ${decls[prop]}`).join('; ')}; }`)
