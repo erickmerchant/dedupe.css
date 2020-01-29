@@ -4,7 +4,6 @@ const fs = require('fs')
 const stream = require('stream')
 const promisify = require('util').promisify
 const postcss = require('postcss')
-const valueParser = require('postcss-value-parser')
 const selectorTokenizer = require('css-selector-tokenizer')
 const finished = promisify(stream.finished)
 const mkdir = promisify(fs.mkdir)
