@@ -9,7 +9,33 @@ const finished = promisify(stream.finished)
 const mkdir = promisify(fs.mkdir)
 const createWriteStream = fs.createWriteStream
 
-const unsupportedShorthands = ['animation', 'background', 'border', 'border-bottom', 'border-left', 'border-right', 'border-top', 'column-rule', 'columns', 'flex', 'flex-flow', 'font', 'grid', 'grid-area', 'grid-column', 'grid-row', 'grid-template', 'list-style', 'offset', 'outline', 'place-content', 'place-items', 'place-self', 'text-decoration', 'transition']
+const unsupportedShorthands = {
+  animation: ['animation-name', 'animation-duration', 'animation-timing-function', 'animation-delay', 'animation-iteration-count', 'animation-direction', 'animation-fill-mode', 'animation-play-state'],
+  background: ['background-clip', 'background-color', 'background-image', 'background-origin', 'background-position', 'background-repeat', 'background-size', 'background-attachment'],
+  border: ['border-bottom-width', 'border-bottom-style', 'border-bottom-color', 'border-left-width', 'border-left-style', 'border-left-color', 'border-right-width', 'border-right-style', 'border-right-color', 'border-top-width', 'border-top-style', 'border-top-color', 'border-color', 'border-style', 'border-width'],
+  'border-bottom': ['border-bottom-width', 'border-bottom-style', 'border-bottom-color'],
+  'border-left': ['border-left-width', 'border-left-style', 'border-left-color'],
+  'border-right': ['border-right-width', 'border-right-style', 'border-right-color'],
+  'border-top': ['border-top-width', 'border-top-style', 'border-top-color'],
+  'column-rule': ['column-rule-width', 'column-rule-style', 'column-rule-color'],
+  columns: ['column-width', 'column-count'],
+  flex: ['flex-grow', 'flex-shrink', 'flex-basis'],
+  'flex-flow': ['flex-direction', 'flex-wrap'],
+  font: ['font-style', 'font-variant', 'font-weight', 'font-stretch', 'font-size', 'line-height', 'font-family'],
+  grid: ['grid-template-rows', 'grid-template-columns', 'grid-template-areas', 'grid-auto-rows', 'grid-auto-columns', 'grid-auto-flow'],
+  'grid-area': ['grid-column-start', 'grid-column-end', 'grid-row-start', 'grid-row-end'],
+  'grid-column': ['grid-column-start', 'grid-column-end'],
+  'grid-row': ['grid-row-start', 'grid-row-end'],
+  'grid-template': ['grid-template-rows', 'grid-template-columns', 'grid-template-areas'],
+  'list-style': ['list-style-type', 'list-style-image', 'list-style-position'],
+  offset: ['offset-position', 'offset-path', 'offset-distance', 'offset-rotate', 'offset-anchor'],
+  outline: ['outline-style', 'outline-width', 'outline-color'],
+  'place-content': ['align-content', 'justify-content'],
+  'place-items': ['align-items', 'justify-items'],
+  'place-self': ['align-self', 'justify-self'],
+  'text-decoration': ['text-decoration-line', 'text-decoration-color', 'text-decoration-style', 'text-decoration-thickness'],
+  transition: ['transition-property', 'transition-duration', 'transition-timing-function', 'transition-delay']
+}
 
 const supportedShorthands = {
   'border-color': require('./lib/shorthands/border-color.js'),
@@ -55,8 +81,6 @@ const processNodes = (nodes, selector = '', template = '{}') => {
 
           continue
         }
-      } else if (unsupportedShorthands.includes(node.prop)) {
-        console.warn(`shorthand property ${node.prop} found`)
       }
 
       const prop = node.prop
@@ -169,8 +193,26 @@ const run = async (args) => {
 
   for (const [name, raw] of Object.entries(input.styles)) {
     const parsed = postcss.parse(raw)
+    const processed = Object.values(processNodes(parsed.nodes))
+    const bannedLonghands = {}
 
-    for (const {template, selector, prop, value} of Object.values(processNodes(parsed.nodes))) {
+    for (const {template, selector, prop} of processed) {
+      if (unsupportedShorthands[prop] != null) {
+        if (bannedLonghands[`${template} ${selector}`] == null) {
+          bannedLonghands[`${template} ${selector}`] = []
+        }
+
+        bannedLonghands[`${template} ${selector}`].push(...unsupportedShorthands[prop])
+      }
+    }
+
+    for (const {template, selector, prop, value} of processed) {
+      if (bannedLonghands[`${template} ${selector}`] != null) {
+        if (bannedLonghands[`${template} ${selector}`].includes(prop)) {
+          console.warn(`${prop} found with shorthand`)
+        }
+      }
+
       tree[template] = tree[template] || []
 
       const index = tree[template].findIndex((r) => r.selector === selector && r.prop === prop && r.value === value)
