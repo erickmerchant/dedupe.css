@@ -42,9 +42,7 @@ const processNodes = (nodes, selector = '', template = '{}') => {
   for (const node of nodes) {
     if (node.type === 'decl') {
       if (supportedShorthands[node.prop]) {
-        const parsed = valueParser(node.value)
-
-        const expanded = supportedShorthands[node.prop].expand(parsed.nodes)
+        const expanded = supportedShorthands[node.prop].expand(node.value)
 
         if (expanded) {
           for (const [prop, value] of Object.entries(expanded)) {
