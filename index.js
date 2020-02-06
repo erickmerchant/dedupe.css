@@ -229,7 +229,21 @@ const run = async (args) => {
       const {selector, prop, value, names} = branch.shift()
 
       if (names.length > 1) {
-        const cls = uniqueId()
+        let cls
+
+        if (ids[names.join()]) {
+          cls = ids[names.join()]
+        } else {
+          cls = uniqueId()
+
+          ids[names.join()] = cls
+
+          for (const name of names) {
+            map[name] = map[name] || []
+
+            map[name].push(cls)
+          }
+        }
 
         const decls = {
           [prop]: value
@@ -252,12 +266,6 @@ const run = async (args) => {
         }
 
         rules.push(`.${cls}${selector} { ${Object.keys(decls).map((prop) => `${prop}: ${decls[prop]}`).join('; ')}; }`)
-
-        for (const name of names) {
-          map[name] = map[name] || []
-
-          map[name].push(cls)
-        }
       } else {
         const name = names[0]
 
