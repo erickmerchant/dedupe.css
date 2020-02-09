@@ -22,7 +22,11 @@ command({
       required: true,
       parameter: true
     },
-    o: 'output'
+    o: 'output',
+    dev: {
+      description: 'run in dev mode'
+    },
+    d: 'dev'
   },
   action
 })

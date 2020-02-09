@@ -310,7 +310,21 @@ const run = async (args) => {
     map[name] = map[name].join(' ')
   }
 
-  output.js.end(`export const classes = ${JSON.stringify(map, null, 2)}`)
+  const stringifiedMap = JSON.stringify(map, null, 2)
+
+  if (args.dev) {
+    output.js.end(`export const classes = new Proxy(${stringifiedMap}, {
+      get(target, prop) {
+        if (target.hasOwnProperty(prop)) {
+          return target[prop]
+        }
+
+        throw Error(\`\${prop} is undefined\`)
+      }
+    })`)
+  } else {
+    output.js.end(`export const classes = ${stringifiedMap}`)
+  }
 
   return Promise.all([
     finished(output.css),
