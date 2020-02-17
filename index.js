@@ -329,10 +329,10 @@ const run = async (args) => {
 
   return Promise.all([
     finished(output.css).then(() => {
-      console.log(`${gray('[css]')} copied ${args.output}.css`)
+      console.log(`${gray('[css]')} saved ${args.output}.css`)
     }),
     finished(output.js).then(() => {
-      console.log(`${gray('[css]')} copied ${args.output}.mjs`)
+      console.log(`${gray('[css]')} saved ${args.output}.mjs`)
     })
   ])
 }
