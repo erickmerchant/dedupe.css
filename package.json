@@ -23,6 +23,7 @@
   "dependencies": {
     "css-selector-tokenizer": "^0.7.1",
     "esm": "^3.2.25",
+    "kleur": "^3.0.3",
     "postcss": "^7.0.26",
     "sergeant": "^27.2.2"
   },

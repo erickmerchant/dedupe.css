@@ -1,4 +1,5 @@
 const _import = require('esm')(module)
+const {gray} = require('kleur')
 const path = require('path')
 const fs = require('fs')
 const stream = require('stream')
@@ -327,8 +328,12 @@ const run = async (args) => {
   }
 
   return Promise.all([
-    finished(output.css),
-    finished(output.js)
+    finished(output.css).then(() => {
+      console.log(`${gray('[css]')} copied ${args.output}.css`)
+    }),
+    finished(output.js).then(() => {
+      console.log(`${gray('[css]')} copied ${args.output}.mjs`)
+    })
   ])
 }
 
