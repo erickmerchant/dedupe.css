@@ -1,7 +1,7 @@
 {
   "name": "@erickmerchant/css",
   "version": "20.7.1",
-  "description": "a cli to generate atomic css",
+  "description": "A CSS from JS tool.",
   "homepage": "https://github.com/erickmerchant/css#readme",
   "bugs": {
     "url": "https://github.com/erickmerchant/css/issues"
@@ -24,7 +24,7 @@
     "css-selector-tokenizer": "^0.7.1",
     "esm": "^3.2.25",
     "kleur": "^3.0.3",
-    "postcss": "^7.0.26",
+    "postcss": "^7.0.27",
     "sergeant": "^27.2.2"
   },
   "devDependencies": {
