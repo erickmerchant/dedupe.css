@@ -69,7 +69,7 @@ const isEqualArray = (a, b) => {
   return true
 }
 
-const processNodes = (nodes, selector = '', template = '{}') => {
+const processNodes = (nodes, selector, template, templateKeys, position = -1) => {
   let results = {}
 
   for (const node of nodes) {
@@ -84,9 +84,19 @@ const processNodes = (nodes, selector = '', template = '{}') => {
         value
       }
     } else if (node.type === 'atrule') {
+      const t = template.replace('{}', `{ @${node.name} ${node.params} {} }`)
+      const i = templateKeys.indexOf(t)
+      let p = position + 1
+
+      if (i === -1) {
+        templateKeys.splice(p, 0, t)
+      } else {
+        p = i
+      }
+
       results = {
         ...results,
-        ...processNodes(node.nodes, selector, template.replace('{}', `{ @${node.name} ${node.params} {} }`))
+        ...processNodes(node.nodes, selector, t, templateKeys, p)
       }
     } else if (node.type === 'rule') {
       if (selector) throw Error('nested rule found')
@@ -100,7 +110,7 @@ const processNodes = (nodes, selector = '', template = '{}') => {
 
         results = {
           ...results,
-          ...processNodes(node.nodes, selectorTokenizer.stringify(n).trim(), template)
+          ...processNodes(node.nodes, selectorTokenizer.stringify(n).trim(), template, templateKeys, position)
         }
       }
     }
@@ -182,9 +192,11 @@ const run = async (args) => {
     })
   }
 
+  const templateKeys = []
+
   for (const [name, raw] of Object.entries(input.styles)) {
     const parsed = postcss.parse(raw)
-    const processed = Object.values(processNodes(parsed.nodes))
+    const processed = Object.values(processNodes(parsed.nodes, '', '{}', templateKeys))
     const bannedLonghands = {}
 
     for (const {template, selector, prop} of processed) {
@@ -208,7 +220,7 @@ const run = async (args) => {
 
       const index = tree[template].findIndex((r) => r.selector === selector && r.prop === prop && r.value === value)
 
-      if (index < 0) {
+      if (index === -1) {
         tree[template].push({
           names: [name],
           selector,
@@ -221,7 +233,9 @@ const run = async (args) => {
     }
   }
 
-  for (const template of Object.keys(tree)) {
+  templateKeys.push('{}')
+
+  for (const template of templateKeys) {
     const branch = tree[template]
     const remainders = {}
     const rules = []
