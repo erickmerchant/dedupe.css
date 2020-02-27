@@ -69,7 +69,7 @@ const isEqualArray = (a, b) => {
   return true
 }
 
-const processNodes = (nodes, selector, template, templateKeys, position = -1) => {
+const processNodes = (nodes, selector, template) => {
   let results = {}
 
   for (const node of nodes) {
@@ -84,19 +84,11 @@ const processNodes = (nodes, selector, template, templateKeys, position = -1) =>
         value
       }
     } else if (node.type === 'atrule') {
-      const t = template.replace('{}', `{ @${node.name} ${node.params} {} }`)
-      const i = templateKeys.indexOf(t)
-      let p = position + 1
-
-      if (i === -1) {
-        templateKeys.splice(p, 0, t)
-      } else {
-        p = i
-      }
+      const t = `${template}@${node.name} ${node.params}`
 
       results = {
         ...results,
-        ...processNodes(node.nodes, selector, t, templateKeys, p)
+        ...processNodes(node.nodes, selector, t)
       }
     } else if (node.type === 'rule') {
       if (selector) throw Error('nested rule found')
@@ -110,7 +102,7 @@ const processNodes = (nodes, selector, template, templateKeys, position = -1) =>
 
         results = {
           ...results,
-          ...processNodes(node.nodes, selectorTokenizer.stringify(n).trim(), template, templateKeys, position)
+          ...processNodes(node.nodes, selectorTokenizer.stringify(n).trim(), template)
         }
       }
     }
@@ -192,14 +184,18 @@ const run = async (args) => {
     })
   }
 
-  const templateKeys = []
+  const unorderedTemplates = []
+  const orderedTemplates = []
 
   for (const [name, raw] of Object.entries(input.styles)) {
     const parsed = postcss.parse(raw)
-    const processed = Object.values(processNodes(parsed.nodes, '', '{}', templateKeys))
+    const processed = Object.values(processNodes(parsed.nodes, '', ''))
     const bannedLonghands = {}
+    const templates = []
 
     for (const {template, selector, prop} of processed) {
+      if (!templates.includes(template)) templates.push(template)
+
       if (unsupportedShorthands[prop] != null) {
         if (bannedLonghands[`${template} ${selector}`] == null) {
           bannedLonghands[`${template} ${selector}`] = []
@@ -231,11 +227,61 @@ const run = async (args) => {
         tree[template][index].names.push(name)
       }
     }
+
+    let index = 0
+
+    if (templates.length > 1) {
+      for (const template of templates) {
+        const unorderedIndex = unorderedTemplates.indexOf(template)
+
+        if (unorderedIndex > -1) {
+          unorderedTemplates.splice(unorderedIndex, 1)
+        }
+
+        const orderedIndex = orderedTemplates.indexOf(template)
+
+        if (orderedIndex > -1) {
+          index = orderedIndex
+        } else {
+          orderedTemplates.splice(++index, 0, template)
+        }
+      }
+    } else if (!unorderedTemplates.includes(templates[0]) && !orderedTemplates.includes(templates[0])) {
+      unorderedTemplates.push(templates[0])
+    }
   }
 
-  templateKeys.push('{}')
+  const concatedTemplates = unorderedTemplates.concat(orderedTemplates)
 
-  for (const template of templateKeys) {
+  const templateToArray = (template) => template.split('@')
+
+  for (let i = 0; i < concatedTemplates.length; i++) {
+    const template = concatedTemplates[i]
+    const splitAtrules = templateToArray(template)
+    const prevAtrules = templateToArray(concatedTemplates[i - 1] || '')
+    const nextAtrules = templateToArray(concatedTemplates[i + 1] || '')
+
+    let startLine = ''
+    let endLine = ''
+
+    for (let i = 0; i < splitAtrules.length; i++) {
+      if (splitAtrules[i] !== prevAtrules[i]) {
+        const remainder = splitAtrules.slice(i)
+
+        startLine = remainder.map((part) => part ? ` @${part} { ` : '').join('')
+
+        break
+      }
+    }
+
+    for (let i = splitAtrules.length - 1; i >= 0; i--) {
+      if (splitAtrules[i] !== nextAtrules[i]) {
+        endLine += ' } '
+      } else {
+        break
+      }
+    }
+
     const branch = tree[template]
     const remainders = {}
     const rules = []
@@ -314,9 +360,11 @@ const run = async (args) => {
       }
     }
 
-    const line = template.replace('{}', `{ ${rules.join('')} }`)
+    output.css.write(startLine)
 
-    output.css.write(line.substring(2, line.length - 2))
+    output.css.write(rules.join(''))
+
+    output.css.write(endLine)
   }
 
   output.css.end(input._end != null ? input._end : '')
