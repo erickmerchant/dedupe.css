@@ -268,7 +268,7 @@ const run = async (args) => {
       if (splitAtrules[i] !== prevAtrules[i]) {
         const remainder = splitAtrules.slice(i)
 
-        startLine = remainder.map((part) => part ? ` @${part} { ` : '').join('')
+        startLine = remainder.map((part) => (part ? ` @${part} { ` : '')).join('')
 
         break
       }
