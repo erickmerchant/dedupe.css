@@ -188,7 +188,7 @@ const run = async (args) => {
   const orderedTemplates = []
 
   for (const [name, raw] of Object.entries(input.styles)) {
-    const parsed = postcss.parse(raw)
+    const parsed = postcss.parse(typeof raw === 'function' ? raw(input.styles) : raw)
     const processed = Object.values(processNodes(parsed.nodes, '', ''))
     const bannedLonghands = {}
     const templates = []
