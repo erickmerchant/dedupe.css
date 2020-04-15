@@ -17,7 +17,7 @@
     "css": "./cli.js"
   },
   "scripts": {
-    "pretest": "lint *.js lib/*.js lib/**/*.js",
+    "pretest": "lint '**/*.js'",
     "test": "tape test.js"
   },
   "dependencies": {
