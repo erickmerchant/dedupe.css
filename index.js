@@ -129,6 +129,20 @@ const processSelectors = (node) => {
   return results
 }
 
+const proxy = (styles) => new Proxy(styles, {
+  get(target, prop) {
+    if (target.hasOwnProperty(prop)) {
+      if (typeof target[prop] === 'function') {
+        return target[prop](target)
+      }
+
+      return target[prop]
+    }
+
+    throw Error(`${prop} is undefined`)
+  }
+})
+
 const run = async (args) => {
   let id = 0
   const existingIds = []
@@ -188,7 +202,7 @@ const run = async (args) => {
   const orderedTemplates = []
 
   for (const [name, raw] of Object.entries(input.styles)) {
-    const parsed = postcss.parse(typeof raw === 'function' ? raw(input.styles) : raw)
+    const parsed = postcss.parse(typeof raw === 'function' ? raw(proxy(input.styles)) : raw)
     const processed = Object.values(processNodes(parsed.nodes, '', ''))
     const bannedLonghands = {}
     const templates = []
