@@ -133,7 +133,7 @@ const proxy = (styles) => new Proxy(styles, {
   get(target, prop) {
     if (target.hasOwnProperty(prop)) {
       if (typeof target[prop] === 'function') {
-        return target[prop](target)
+        return target[prop](proxy(target))
       }
 
       return target[prop]
