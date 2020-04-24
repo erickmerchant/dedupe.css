@@ -30,6 +30,6 @@
   "devDependencies": {
     "@erickmerchant/lint": "^4.1.2",
     "execa": "^4.0.0",
-    "tape": "^4.13.2"
+    "tape": "^5.0.0"
   }
 }
