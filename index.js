@@ -69,7 +69,7 @@ const isEqualArray = (a, b) => {
   return true
 }
 
-const processNodes = (nodes, selector, template) => {
+const processNodes = (nodes, pseudo, template) => {
   let results = {}
 
   for (const node of nodes) {
@@ -77,9 +77,9 @@ const processNodes = (nodes, selector, template) => {
       const prop = node.prop
       const value = node.value
 
-      results[`${template} ${selector} ${prop}`] = {
+      results[`${template} ${pseudo} ${prop}`] = {
         template,
-        selector,
+        pseudo,
         prop,
         value
       }
@@ -88,15 +88,17 @@ const processNodes = (nodes, selector, template) => {
 
       results = {
         ...results,
-        ...processNodes(node.nodes, selector, t)
+        ...processNodes(node.nodes, pseudo, t)
       }
     } else if (node.type === 'rule') {
-      if (selector) throw Error('nested rule found')
+      if (pseudo) throw Error('nested rule found')
 
       const parsed = selectorTokenizer.parse(node.selector)
 
       for (const n of parsed.nodes) {
-        if (n.nodes.filter((n) => n.type === 'spacing' || n.type.includes('pseudo')).length !== n.nodes.length) {
+        for (const nn of n.nodes) {
+          if (nn.type.startsWith('pseudo')) continue
+
           throw Error('non-pseudo selector found')
         }
 
@@ -129,20 +131,6 @@ const processSelectors = (node) => {
   return results
 }
 
-const proxy = (styles) => new Proxy(styles, {
-  get(target, prop) {
-    if (target.hasOwnProperty(prop)) {
-      if (typeof target[prop] === 'function') {
-        return target[prop](proxy(target))
-      }
-
-      return target[prop]
-    }
-
-    throw Error(`${prop} is undefined`)
-  }
-})
-
 const run = async (args) => {
   let id = 0
   const existingIds = []
@@ -160,7 +148,7 @@ const run = async (args) => {
         r = i % letterCount
         i = (i - r) / letterCount
 
-        result += letters[r]
+        result = letters[r] + result
       } while (i)
     } while (existingIds.includes(result))
 
@@ -201,44 +189,57 @@ const run = async (args) => {
   const unorderedTemplates = []
   const orderedTemplates = []
 
-  for (const [name, raw] of Object.entries(input.styles)) {
-    const parsed = postcss.parse(typeof raw === 'function' ? raw(proxy(input.styles)) : raw)
+  const proxiedStyles = new Proxy(input.styles, {
+    get(target, prop, receiver) {
+      if (target.hasOwnProperty(prop)) {
+        if (typeof target[prop] === 'function') {
+          return target[prop](receiver)
+        }
+
+        return target[prop]
+      }
+
+      throw Error(`${prop} is undefined`)
+    }
+  })
+
+  for (const name of Object.keys(input.styles)) {
+    const parsed = postcss.parse(proxiedStyles[name])
     const processed = Object.values(processNodes(parsed.nodes, '', ''))
     const bannedLonghands = {}
     const templates = []
 
-    for (const {template, selector, prop} of processed) {
+    for (const {template, pseudo, prop} of processed) {
       if (!templates.includes(template)) templates.push(template)
 
       if (unsupportedShorthands[prop] != null) {
-        if (bannedLonghands[`${template} ${selector}`] == null) {
-          bannedLonghands[`${template} ${selector}`] = []
+        if (bannedLonghands[`${template} ${pseudo}`] == null) {
+          bannedLonghands[`${template} ${pseudo}`] = []
         }
 
-        bannedLonghands[`${template} ${selector}`].push(...unsupportedShorthands[prop])
+        bannedLonghands[`${template} ${pseudo}`].push(...unsupportedShorthands[prop])
       }
     }
 
-    for (const {template, selector, prop, value} of processed) {
-      if (bannedLonghands[`${template} ${selector}`] != null) {
-        if (bannedLonghands[`${template} ${selector}`].includes(prop)) {
+    for (const {template, pseudo, prop, value} of processed) {
+      if (bannedLonghands[`${template} ${pseudo}`] != null) {
+        if (bannedLonghands[`${template} ${pseudo}`].includes(prop)) {
           console.warn(`${prop} found with shorthand`)
         }
       }
 
       tree[template] = tree[template] || []
 
-      const index = tree[template].findIndex((r) => r.selector === selector && r.prop === prop && r.value === value)
+      const index = tree[template].findIndex((r) => r.prop === prop && r.value === value)
 
       if (index === -1) {
         tree[template].push({
-          names: [name],
-          selector,
+          names: [`${name}${pseudo}`],
           prop,
           value
         })
       } else {
-        tree[template][index].names.push(name)
+        tree[template][index].names.push(`${name}${pseudo}`)
       }
     }
 
@@ -301,25 +302,9 @@ const run = async (args) => {
     const rules = []
 
     while (branch.length) {
-      const {selector, prop, value, names} = branch.shift()
+      const {prop, value, names} = branch.shift()
 
       if (names.length > 1) {
-        let cls
-
-        if (ids[names.join()]) {
-          cls = ids[names.join()]
-        } else {
-          cls = uniqueId()
-
-          ids[names.join()] = cls
-
-          for (const name of names) {
-            map[name] = map[name] || []
-
-            map[name].push(cls)
-          }
-        }
-
         const decls = {
           [prop]: value
         }
@@ -327,7 +312,7 @@ const run = async (args) => {
         let i = 0
 
         while (i < branch.length) {
-          if (isEqualArray(branch[i].names, names) && branch[i].selector === selector) {
+          if (isEqualArray(branch[i].names, names)) {
             decls[branch[i].prop] = branch[i].value
 
             branch.splice(i, 1)
@@ -340,32 +325,83 @@ const run = async (args) => {
           shorthand.collapse(decls)
         }
 
-        rules.push(`.${cls}${selector} { ${Object.keys(decls).map((prop) => `${prop}: ${decls[prop]}`).join('; ')}; }`)
+        const selectors = {}
+
+        for (let name of names) {
+          const pseudoIndex = name.indexOf(':')
+          let pseudo = ''
+
+          if (pseudoIndex > -1) {
+            pseudo = name.substring(pseudoIndex)
+
+            name = name.substring(0, pseudoIndex)
+          }
+
+          let filtered
+
+          if (!pseudo) {
+            filtered = names.filter((name) => name.indexOf(':') === -1)
+          } else {
+            filtered = names.filter((name) => {
+              const i = name.indexOf(':')
+
+              if (i === -1) return false
+
+              return name.substring(i) === pseudo
+            })
+          }
+
+          filtered = filtered.join()
+
+          if (selectors[pseudo] == null) {
+            selectors[pseudo] = ids[`${filtered} ${pseudo}`] || uniqueId()
+
+            ids[`${filtered} ${pseudo}`] = selectors[pseudo]
+          }
+
+          map[name] = map[name] || []
+
+          if (!map[name].includes(selectors[pseudo])) {
+            map[name].push(selectors[pseudo])
+          }
+        }
+
+        rules.push(`${Object.entries(selectors).map(([key, val]) => `.${val}${key}`).join(', ')} { ${Object.keys(decls).map((prop) => `${prop}: ${decls[prop]}`).join('; ')}; }`)
       } else {
         const name = names[0]
 
-        if (remainders[`${selector} ${name}`] == null) {
-          remainders[`${selector} ${name}`] = {
-            selector,
+        if (remainders[name] == null) {
+          remainders[name] = {
             name,
             decls: {}
           }
         }
 
-        remainders[`${selector} ${name}`].decls[prop] = value
+        remainders[name].decls[prop] = value
       }
     }
 
-    for (const {selector, name, decls} of Object.values(remainders)) {
+    for (const remainder of Object.values(remainders)) {
+      let name = remainder.name
+
+      for (const shorthand of Object.values(supportedShorthands)) {
+        shorthand.collapse(remainder.decls)
+      }
+
+      const pseudoIndex = name.indexOf(':')
+      let pseudo = ''
+
+      if (pseudoIndex > -1) {
+        pseudo = name.substring(pseudoIndex)
+
+        name = name.substring(0, pseudoIndex)
+      }
+
       const cls = ids[name] || uniqueId()
 
       ids[name] = cls
 
-      for (const shorthand of Object.values(supportedShorthands)) {
-        shorthand.collapse(decls)
-      }
-
-      rules.push(`.${cls}${selector} { ${Object.keys(decls).map((prop) => `${prop}: ${decls[prop]}`).join('; ')}; }`)
+      rules.push(`.${cls}${pseudo} { ${Object.keys(remainder.decls).map((prop) => `${prop}: ${remainder.decls[prop]}`).join('; ')}; }`)
 
       map[name] = map[name] || []
 
