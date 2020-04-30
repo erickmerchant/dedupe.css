@@ -1,4 +1,3 @@
-const _import = require('esm')(module)
 const {gray} = require('kleur')
 const path = require('path')
 const fs = require('fs')
@@ -155,7 +154,9 @@ const run = async (args) => {
     return result
   }
 
-  const input = _import(`${args.input}?${Date.now()}`)
+  const cacheBustedInput = `${args.input}?${Date.now()}`
+
+  const input = await import(cacheBustedInput)
 
   await mkdir(path.dirname(path.join(process.cwd(), args.output)), {recursive: true})
 
