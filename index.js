@@ -229,7 +229,7 @@ const run = async (args) => {
         }
       }
 
-      tree[template] = tree[template] || []
+      tree[template] = tree[template] ?? []
 
       const index = tree[template].findIndex((r) => r.prop === prop && r.value === value)
 
@@ -274,8 +274,8 @@ const run = async (args) => {
   for (let i = 0; i < concatedTemplates.length; i++) {
     const template = concatedTemplates[i]
     const splitAtrules = templateToArray(template)
-    const prevAtrules = templateToArray(concatedTemplates[i - 1] || '')
-    const nextAtrules = templateToArray(concatedTemplates[i + 1] || '')
+    const prevAtrules = templateToArray(concatedTemplates[i - 1] ?? '')
+    const nextAtrules = templateToArray(concatedTemplates[i + 1] ?? '')
 
     let startLine = ''
     let endLine = ''
@@ -355,12 +355,12 @@ const run = async (args) => {
           filtered = filtered.join()
 
           if (selectors[pseudo] == null) {
-            selectors[pseudo] = ids[`${filtered} ${pseudo}`] || uniqueId()
+            selectors[pseudo] = ids[`${filtered} ${pseudo}`] ?? uniqueId()
 
             ids[`${filtered} ${pseudo}`] = selectors[pseudo]
           }
 
-          map[name] = map[name] || []
+          map[name] = map[name] ?? []
 
           if (!map[name].includes(selectors[pseudo])) {
             map[name].push(selectors[pseudo])
@@ -398,13 +398,13 @@ const run = async (args) => {
         name = name.substring(0, pseudoIndex)
       }
 
-      const cls = ids[name] || uniqueId()
+      const cls = ids[name] ?? uniqueId()
 
       ids[name] = cls
 
       rules.push(`.${cls}${pseudo} { ${Object.keys(remainder.decls).map((prop) => `${prop}: ${remainder.decls[prop]}`).join('; ')}; }`)
 
-      map[name] = map[name] || []
+      map[name] = map[name] ?? []
 
       if (!map[name].includes(cls)) {
         map[name].push(cls)

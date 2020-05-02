@@ -24,7 +24,7 @@
     "css-selector-tokenizer": "^0.7.2",
     "kleur": "^3.0.3",
     "postcss": "^7.0.27",
-    "sergeant": "^28.0.0"
+    "sergeant": "^28.1.0"
   },
   "devDependencies": {
     "@erickmerchant/lint": "^5.0.0",
