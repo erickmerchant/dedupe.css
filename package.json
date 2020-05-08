@@ -27,8 +27,7 @@
     "sergeant": "^28.1.0"
   },
   "devDependencies": {
-    "@erickmerchant/lint": "^5.0.0",
-    "execa": "^4.0.0",
+    "@erickmerchant/lint": "^5.1.0",
     "tape": "^5.0.0"
   }
 }
