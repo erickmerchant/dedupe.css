@@ -214,19 +214,19 @@ const run = async (args) => {
       if (!templates.includes(template)) templates.push(template)
 
       if (unsupportedShorthands[prop] != null) {
-        if (bannedLonghands[`${template} ${pseudo}`] == null) {
-          bannedLonghands[`${template} ${pseudo}`] = []
-        }
+        const key = `${template} ${pseudo}`
 
-        bannedLonghands[`${template} ${pseudo}`].push(...unsupportedShorthands[prop])
+        bannedLonghands[key] = bannedLonghands[key] ?? []
+
+        bannedLonghands[key].push(...unsupportedShorthands[prop])
       }
     }
 
     for (const {template, pseudo, prop, value} of processed) {
-      if (bannedLonghands[`${template} ${pseudo}`] != null) {
-        if (bannedLonghands[`${template} ${pseudo}`].includes(prop)) {
-          console.warn(`${prop} found with shorthand`)
-        }
+      const key = `${template} ${pseudo}`
+
+      if (bannedLonghands?.[key]?.includes(prop)) {
+        console.warn(`${prop} found with shorthand`)
       }
 
       tree[template] = tree[template] ?? []
@@ -354,11 +354,9 @@ const run = async (args) => {
 
           filtered = filtered.join()
 
-          if (selectors[pseudo] == null) {
-            selectors[pseudo] = ids[`${filtered} ${pseudo}`] ?? uniqueId()
+          selectors[pseudo] = ids[`${filtered} ${pseudo}`] ?? uniqueId()
 
-            ids[`${filtered} ${pseudo}`] = selectors[pseudo]
-          }
+          ids[`${filtered} ${pseudo}`] = selectors[pseudo]
 
           map[name] = map[name] ?? []
 
@@ -371,11 +369,9 @@ const run = async (args) => {
       } else {
         const name = names[0]
 
-        if (remainders[name] == null) {
-          remainders[name] = {
-            name,
-            decls: {}
-          }
+        remainders[name] = remainders[name] ?? {
+          name,
+          decls: {}
         }
 
         remainders[name].decls[prop] = value
@@ -418,7 +414,7 @@ const run = async (args) => {
     output.css.write(endLine)
   }
 
-  output.css.end(input._end != null ? input._end : '')
+  output.css.end(input._end ?? '')
 
   for (const name of Object.keys(map)) {
     map[name] = map[name].join(' ')
