@@ -29,5 +29,8 @@
   "devDependencies": {
     "@erickmerchant/lint": "^5.1.0",
     "tape": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=14.2"
   }
 }
