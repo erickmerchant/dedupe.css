@@ -18,7 +18,7 @@
   },
   "scripts": {
     "pretest": "lint '**/*.js'",
-    "test": "tape test.js"
+    "test": "node test.js"
   },
   "dependencies": {
     "css-selector-tokenizer": "^0.7.2",
@@ -27,8 +27,7 @@
     "sergeant": "^28.1.0"
   },
   "devDependencies": {
-    "@erickmerchant/lint": "^5.1.0",
-    "tape": "^5.0.0"
+    "@erickmerchant/lint": "^5.1.0"
   },
   "engines": {
     "node": ">=14.2"

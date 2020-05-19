@@ -1,7 +1,3 @@
-const test = require('tape')
+const assert = require('assert')
 
-test('noop', async (t) => {
-  t.plan(1)
-
-  t.ok(true)
-})
+assert.ok(true)
