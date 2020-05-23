@@ -17,18 +17,15 @@
     "css": "./cli.js"
   },
   "scripts": {
-    "pretest": "lint '**/*.js'",
     "test": "node test.js"
   },
   "dependencies": {
     "css-selector-tokenizer": "^0.7.2",
     "kleur": "^3.0.3",
     "postcss": "^7.0.30",
-    "sergeant": "^28.1.0"
+    "sergeant": "^28.1.1"
   },
-  "devDependencies": {
-    "@erickmerchant/lint": "^5.1.0"
-  },
+  "devDependencies": {},
   "engines": {
     "node": ">=14.2"
   }
