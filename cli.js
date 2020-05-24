@@ -18,7 +18,8 @@ command({
     },
     i: 'input',
     output: {
-      description: 'what the output css and js files will be named without extension',
+      description:
+        'what the output css and js files will be named without extension',
       required: true,
       parameter: true
     },
