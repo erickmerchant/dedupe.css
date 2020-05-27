@@ -308,7 +308,7 @@ const run = async (args) => {
 
   const proxiedStyles = new Proxy(input.styles, {
     get(target, prop, receiver) {
-      if (target.hasOwnProperty(prop)) {
+      if ({}.hasOwnProperty.call(target, prop)) {
         if (typeof target[prop] === 'function') {
           return target[prop](receiver)
         }
@@ -558,7 +558,7 @@ const run = async (args) => {
   if (args.dev) {
     output.js.end(`export const classes = new Proxy(${stringifiedMap}, {
       get(target, prop) {
-        if (target.hasOwnProperty(prop)) {
+        if ({}.hasOwnProperty.call(target, prop)) {
           return target[prop]
         }
 
