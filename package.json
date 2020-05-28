@@ -17,8 +17,8 @@
     "css": "./cli.js"
   },
   "scripts": {
-    "pretest": "eslint '*.js' 'lib/*.js'",
-    "test": "node test.js"
+    "lint": "eslint '*.js' 'lib/*.js'",
+    "test": "npm run lint"
   },
   "dependencies": {
     "css-selector-tokenizer": "^0.7.2",
