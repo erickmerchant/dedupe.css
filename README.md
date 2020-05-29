@@ -10,7 +10,7 @@ This module takes a single ES module entry point, and outputs a single CSS file 
 
 # Example
 
-``` javascript
+```javascript
 // input.js
 const desktop = '@media (min-width: 100px)'
 
@@ -50,13 +50,15 @@ export const styles = {
 }
 ```
 
-``` css
+```css
 /* output.css */
 p {
-  margin-top: var(--spacing)
+  margin-top: var(--spacing);
 }
 
-.a { font-weight: bold; }
+.a {
+  font-weight: bold;
+}
 .b {
   background: #ff8000;
   color: #111;
@@ -74,15 +76,15 @@ p {
 }
 ```
 
-``` javascript
+```javascript
 // output.mjs
 export const classes = {
-  "loud": "a c",
-  "button": "a b"
+  loud: 'a c',
+  button: 'a b'
 }
 ```
 
-``` javascript
+```javascript
 // app.mjs
 import {classes} from './output.mjs'
 
