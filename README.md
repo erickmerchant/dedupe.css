@@ -1,12 +1,12 @@
 # @erickmerchant/css
 
-_CSS from JS_
+## CSS from JS
 
 When I write CSS, I like to write it as if each element will have just one class, and no other styles will apply to that element, except via inheritance. It's nice to look at a rule and see all the declarations that will be applied. I feel like this makes authoring easier, at least for me. To avoid copy-pasting, composition can be used.
 
-But the most ideal way to ship CSS to browsers is with little to no duplication. Something as close to atomic or functional as possible. Without this optimization, compression will help, but my CSS is still bigger than it needs to be.
+In contrast, the most ideal way to ship CSS to browsers is with little to no duplication. Something as close to atomic or functional as possible. Without this optimization, compression will help, but my CSS is still bigger than it needs to be.
 
-This module takes a single ES module entry point, and outputs a single CSS file and a generated ES module that has a map of keys to the generated class names in the css file. As your CSS grows this will likely not scale at the moment, but since there is no browser runtime except for the map of classes this may not be a big deal to you.
+This CLI takes a single ES module entry point, and outputs a single CSS file and a generated ES module that has a map of keys to the generated class names in the css file.
 
 # Example
 
@@ -31,6 +31,7 @@ export const _start = `
 export const styles = {
   loud: `
     ${emphasis}
+
     ${desktop} {
       font-size: 5em;
 
@@ -44,6 +45,7 @@ export const styles = {
   `,
   button: `
     ${emphasis}
+
     background: #ff8000;
     color: #111;
   `
@@ -93,16 +95,18 @@ classes.loud // 'a c'
 classes.button // 'a b'
 ```
 
-## usage
+## Usage
 
 build once
 
 ```
-css input.js -o output
+npx @erickmerchant/css input.js -o output
 ```
 
 watch for changes
 
 ```
-css -w input.js -o output
+npx @erickmerchant/css -w input.js -o output
 ```
+
+> ⚠️ As your CSS grows this will likely not scale at the moment, but since there is no browser runtime except for the map of classes this may not be a big deal to you.
