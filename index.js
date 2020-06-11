@@ -4,6 +4,7 @@ const fs = require('fs')
 const stream = require('stream')
 const promisify = require('util').promisify
 const postcss = require('postcss')
+const csso = require('csso')
 const selectorTokenizer = require('css-selector-tokenizer')
 const finished = promisify(stream.finished)
 const mkdir = promisify(fs.mkdir)
@@ -281,12 +282,14 @@ const run = async (args) => {
     js: createWriteStream(path.join(process.cwd(), `${args.output}.mjs`))
   }
 
+  let css = ''
+
   const map = {}
   const tree = {}
   const ids = {}
 
   if (input._start) {
-    output.css.write(input._start)
+    css += input._start
 
     postcss.parse(input._start).walkRules((rule) => {
       const parsed = selectorTokenizer.parse(rule.selector)
@@ -540,14 +543,20 @@ const run = async (args) => {
       }
     }
 
-    output.css.write(startLine)
+    css += startLine
 
-    output.css.write(rules.join(''))
+    css += rules.join('')
 
-    output.css.write(endLine)
+    css += endLine
   }
 
-  output.css.end(input._end ?? '')
+  css += input._end ?? ''
+
+  if (!args.dev) {
+    css = csso.minify(css, {restructure: false}).css
+  }
+
+  output.css.end(css)
 
   for (const name of Object.keys(map)) {
     map[name] = map[name].join(' ')
