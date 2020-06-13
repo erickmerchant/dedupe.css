@@ -21,6 +21,7 @@
     "test": "npm run lint"
   },
   "dependencies": {
+    "chokidar": "^3.4.0",
     "css-selector-tokenizer": "^0.7.2",
     "csso": "^4.0.3",
     "kleur": "^3.0.3",

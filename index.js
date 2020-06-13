@@ -6,6 +6,7 @@ const promisify = require('util').promisify
 const postcss = require('postcss')
 const csso = require('csso')
 const selectorTokenizer = require('css-selector-tokenizer')
+const chokidar = require('chokidar')
 const finished = promisify(stream.finished)
 const mkdir = promisify(fs.mkdir)
 const createWriteStream = fs.createWriteStream
@@ -597,17 +598,7 @@ module.exports = (args) => {
 
   run(args)
 
-  let changed = false
-
-  fs.watch(args.input, () => {
-    if (!changed) {
-      changed = true
-
-      setTimeout(() => {
-        run(args)
-
-        changed = false
-      }, 100)
-    }
+  chokidar.watch(args.input, {ignoreInitial: true}).on('change', () => {
+    run(args)
   })
 }
