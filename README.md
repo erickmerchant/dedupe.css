@@ -25,7 +25,7 @@ export const _start = `
   }
 `
 
-// these are the identifiers (class like) that we'll use later in app.mjs
+// these are the identifiers (class like) that we'll use later in app.js
 export const styles = {
   loud: `
     ${emphasis}
@@ -77,7 +77,7 @@ p {
 ```
 
 ```javascript
-// output.mjs
+// output.js
 export const classes = {
   loud: 'a c',
   button: 'a b'
@@ -85,8 +85,8 @@ export const classes = {
 ```
 
 ```javascript
-// app.mjs
-import {classes} from './output.mjs'
+// app.js
+import {classes} from './output.js'
 
 classes.loud // 'a c'
 

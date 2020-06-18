@@ -1,12 +1,13 @@
-const {gray} = require('kleur')
-const path = require('path')
-const fs = require('fs')
-const stream = require('stream')
-const promisify = require('util').promisify
-const postcss = require('postcss')
-const csso = require('csso')
-const selectorTokenizer = require('css-selector-tokenizer')
-const chokidar = require('chokidar')
+import {gray} from 'kleur/colors'
+import path from 'path'
+import fs from 'fs'
+import stream from 'stream'
+import {promisify} from 'util'
+import postcss from 'postcss'
+import csso from 'csso'
+import selectorTokenizer from 'css-selector-tokenizer'
+import chokidar from 'chokidar'
+
 const finished = promisify(stream.finished)
 const mkdir = promisify(fs.mkdir)
 const createWriteStream = fs.createWriteStream
@@ -156,14 +157,14 @@ const unsupportedShorthands = {
   ]
 }
 
-const supportedShorthands = {
-  'border-color': require('./lib/shorthands/border-color.js'),
-  'border-radius': require('./lib/shorthands/border-radius.js'),
-  'border-style': require('./lib/shorthands/border-style.js'),
-  'border-width': require('./lib/shorthands/border-width.js'),
-  'margin': require('./lib/shorthands/margin.js'),
-  'overflow': require('./lib/shorthands/overflow.js'),
-  'padding': require('./lib/shorthands/padding.js')
+const supportedShorthandModules = {
+  'border-color': './lib/shorthands/border-color.js',
+  'border-radius': './lib/shorthands/border-radius.js',
+  'border-style': './lib/shorthands/border-style.js',
+  'border-width': './lib/shorthands/border-width.js',
+  'margin': './lib/shorthands/margin.js',
+  'overflow': './lib/shorthands/overflow.js',
+  'padding': './lib/shorthands/padding.js'
 }
 
 const letters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
@@ -247,6 +248,14 @@ const processSelectors = (node) => {
 }
 
 const run = async (args) => {
+  const supportedShorthands = {}
+
+  await Promise.all(
+    Object.entries(supportedShorthandModules).map(async ([key, val]) => {
+      supportedShorthands[key] = (await import(val)).default
+    })
+  )
+
   let id = 0
   const existingIds = []
 
@@ -280,7 +289,7 @@ const run = async (args) => {
 
   const output = {
     css: createWriteStream(path.join(process.cwd(), `${args.output}.css`)),
-    js: createWriteStream(path.join(process.cwd(), `${args.output}.mjs`))
+    js: createWriteStream(path.join(process.cwd(), `${args.output}.js`))
   }
 
   let css = ''
@@ -584,12 +593,12 @@ const run = async (args) => {
       console.log(`${gray('[css]')} saved ${args.output}.css`)
     }),
     finished(output.js).then(() => {
-      console.log(`${gray('[css]')} saved ${args.output}.mjs`)
+      console.log(`${gray('[css]')} saved ${args.output}.js`)
     })
   ])
 }
 
-module.exports = (args) => {
+export default (args) => {
   args.input = path.join(process.cwd(), args.input)
 
   if (!args.watch) {

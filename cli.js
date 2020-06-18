@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 'use strict'
 
-const {command, start} = require('sergeant')('css')
-const action = require('./index')
+import sergeant from 'sergeant'
+import action from './index.js'
+
+const {command, start} = sergeant('css')
 
 command({
   signature: ['input', 'output'],

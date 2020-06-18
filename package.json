@@ -12,6 +12,7 @@
   },
   "license": "ISC",
   "author": "Erick Merchant <erickmerchant@gmail.com>",
+  "type": "module",
   "main": "index.js",
   "bin": {
     "css": "./cli.js"
