@@ -1,6 +1,4 @@
 #!/usr/bin/env node
-'use strict'
-
 import sergeant from 'sergeant'
 import action from './index.js'
 
