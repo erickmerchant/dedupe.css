@@ -18,7 +18,7 @@
     "css": "./cli.js"
   },
   "scripts": {
-    "lint": "eslint '*.js' 'lib/*.js'",
+    "lint": "eslint . --ignore-path .gitignore",
     "test": "npm run lint"
   },
   "dependencies": {
