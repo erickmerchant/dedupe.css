@@ -15,6 +15,7 @@ ${bold('Options:')}
  -w, --watch  watch for changes
  -d, --dev    don't minify. throw on missing
  -h, --help   display this message
+
 `
 
 const program = async () => {
@@ -29,7 +30,7 @@ const program = async () => {
     })
 
     if (args['--help']) {
-      console.log(usage)
+      process.stdout.write(usage)
 
       process.exit(2)
     }
@@ -48,7 +49,7 @@ const program = async () => {
 
     await action(args)
   } catch (error) {
-    console.error(error)
+    process.stderr.write(`${error}\n`)
 
     process.exit(1)
   }

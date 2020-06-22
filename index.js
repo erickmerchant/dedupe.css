@@ -590,10 +590,10 @@ const run = async (args) => {
 
   return Promise.all([
     finished(output.css).then(() => {
-      console.log(`${gray('[css]')} saved ${args.output}.css`)
+      process.stdout.write(`${gray('[css]')} saved ${args.output}.css\n`)
     }),
     finished(output.js).then(() => {
-      console.log(`${gray('[css]')} saved ${args.output}.js`)
+      process.stdout.write(`${gray('[css]')} saved ${args.output}.js\n`)
     })
   ])
 }
