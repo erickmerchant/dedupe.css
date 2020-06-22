@@ -1,35 +1,57 @@
 #!/usr/bin/env node
-import sergeant from 'sergeant'
+import arg from 'arg'
+import {magenta, bold} from 'kleur/colors'
 import action from './index.js'
 
-const {command, start} = sergeant('css')
+const usage = `
+@erickmerchant/css
 
-command({
-  signature: ['input', 'output'],
-  options: {
-    watch: {
-      description: 'watch for changes'
-    },
-    w: 'watch',
-    input: {
-      description: 'what the input js file is named',
-      required: true,
-      parameter: true
-    },
-    i: 'input',
-    output: {
-      description:
-        'what the output css and js files will be named without extension',
-      required: true,
-      parameter: true
-    },
-    o: 'output',
-    dev: {
-      description: 'run in dev mode'
-    },
-    d: 'dev'
-  },
-  action
-})
+${bold('Usage:')}
 
-start(process.argv.slice(2))
+ $ ${magenta('css')} [options] -- <input> <output>
+
+${bold('Options:')}
+
+ -w, --watch  watch for changes
+ -d, --dev    don't minify. throw on missing
+ -h, --help   display this message
+`
+
+const program = async () => {
+  try {
+    const args = arg({
+      '--watch': Boolean,
+      '--dev': Boolean,
+      '--help': Boolean,
+      '-w': '--watch',
+      '-d': '--dev',
+      '-h': '--help'
+    })
+
+    if (args['--help']) {
+      console.log(usage)
+
+      process.exit(2)
+    }
+
+    if (args._.length < 2) {
+      throw RangeError('too few arguments')
+    }
+
+    if (args._.length > 2) {
+      throw RangeError('too many arguments')
+    }
+
+    const [input, output] = args._
+
+    Object.assign(args, {input, output})
+
+    await action(args)
+  } catch (error) {
+    console.error(error)
+
+    process.exit(1)
+  }
+}
+
+program()

@@ -562,7 +562,7 @@ const run = async (args) => {
 
   css += input._end ?? ''
 
-  if (!args.dev) {
+  if (!args['--dev']) {
     css = csso.minify(css, {restructure: false}).css
   }
 
@@ -574,7 +574,7 @@ const run = async (args) => {
 
   const stringifiedMap = JSON.stringify(map, null, 2)
 
-  if (args.dev) {
+  if (args['--dev']) {
     output.js.end(`export const classes = new Proxy(${stringifiedMap}, {
       get(target, prop) {
         if ({}.hasOwnProperty.call(target, prop)) {
@@ -601,7 +601,7 @@ const run = async (args) => {
 export default (args) => {
   args.input = path.join(process.cwd(), args.input)
 
-  if (!args.watch) {
+  if (!args['--watch']) {
     return run(args)
   }
 

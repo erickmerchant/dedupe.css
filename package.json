@@ -22,12 +22,12 @@
     "test": "npm run lint"
   },
   "dependencies": {
+    "arg": "^4.1.3",
     "chokidar": "^3.4.0",
     "css-selector-tokenizer": "^0.7.2",
     "csso": "^4.0.3",
     "kleur": "^4.0.1",
-    "postcss": "^7.0.32",
-    "sergeant": "^28.1.1"
+    "postcss": "^7.0.32"
   },
   "devDependencies": {
     "@erickmerchant/eslint-config": "^1.1.1",
