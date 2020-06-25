@@ -26,7 +26,7 @@
     "chokidar": "^3.4.0",
     "css-selector-tokenizer": "^0.7.2",
     "csso": "^4.0.3",
-    "kleur": "^4.0.1",
+    "kleur": "^4.0.2",
     "postcss": "^7.0.32"
   },
   "devDependencies": {
