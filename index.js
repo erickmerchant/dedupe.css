@@ -364,7 +364,7 @@ const run = async (args) => {
         (r) => r.prop === prop && r.value === value
       )
 
-      if (index === -1) {
+      if (!~index) {
         tree[template].push({
           names: [`${name}${pseudo}`],
           prop,
@@ -381,13 +381,13 @@ const run = async (args) => {
       for (const template of templates) {
         const unorderedIndex = unorderedTemplates.indexOf(template)
 
-        if (unorderedIndex > -1) {
+        if (~unorderedIndex) {
           unorderedTemplates.splice(unorderedIndex, 1)
         }
 
         const orderedIndex = orderedTemplates.indexOf(template)
 
-        if (orderedIndex > -1) {
+        if (~orderedIndex) {
           index = orderedIndex
         } else {
           orderedTemplates.splice(++index, 0, template)
@@ -468,7 +468,7 @@ const run = async (args) => {
           const pseudoIndex = name.indexOf(':')
           let pseudo = ''
 
-          if (pseudoIndex > -1) {
+          if (~pseudoIndex) {
             pseudo = name.substring(pseudoIndex)
 
             name = name.substring(0, pseudoIndex)
@@ -477,12 +477,12 @@ const run = async (args) => {
           let filtered
 
           if (!pseudo) {
-            filtered = names.filter((name) => name.indexOf(':') === -1)
+            filtered = names.filter((name) => !~name.indexOf(':'))
           } else {
             filtered = names.filter((name) => {
               const i = name.indexOf(':')
 
-              if (i === -1) return false
+              if (!~i) return false
 
               return name.substring(i) === pseudo
             })
@@ -530,7 +530,7 @@ const run = async (args) => {
       const pseudoIndex = name.indexOf(':')
       let pseudo = ''
 
-      if (pseudoIndex > -1) {
+      if (~pseudoIndex) {
         pseudo = name.substring(pseudoIndex)
 
         name = name.substring(0, pseudoIndex)
