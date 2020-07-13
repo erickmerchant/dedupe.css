@@ -14,9 +14,7 @@ import getClassNames from './lib/get-selectors.js'
 const finished = promisify(stream.finished)
 const mkdir = promisify(fs.mkdir)
 const createWriteStream = fs.createWriteStream
-
 const letters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-
 const letterCount = letters.length
 
 const processNodes = (nodes, pseudo, template) => {
