@@ -27,7 +27,8 @@
     "css-selector-tokenizer": "^0.7.2",
     "csso": "^4.0.3",
     "kleur": "^4.0.2",
-    "postcss": "^7.0.32"
+    "postcss": "^7.0.32",
+    "sqlite3": "^5.0.0"
   },
   "devDependencies": {
     "@erickmerchant/eslint-config": "^1.1.1",

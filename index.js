@@ -7,87 +7,146 @@ import postcss from 'postcss'
 import csso from 'csso'
 import selectorTokenizer from 'css-selector-tokenizer'
 import chokidar from 'chokidar'
-import shorthandLonghands from './lib/shorthand-longhands.js'
-import isEqualArray from './lib/is-equal-array.js'
+// import shorthandLonghands from './lib/shorthand-longhands.js'
+// import isEqualArray from './lib/is-equal-array.js'
 import getClassNames from './lib/get-selectors.js'
+import sqlite3 from 'sqlite3'
 
 const finished = promisify(stream.finished)
 const mkdir = promisify(fs.mkdir)
 const createWriteStream = fs.createWriteStream
-const letters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-const letterCount = letters.length
+// const letters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+// const letterCount = letters.length
 
-const processNodes = (nodes, pseudo, template) => {
-  let results = {}
+const buildData = async (db, name, node, pseudo = '', atruleId = 0) => {
+  if (node.type === 'decl') {
+    const prop = node.prop
+    const value = node.value
 
-  for (const node of nodes) {
-    if (node.type === 'decl') {
-      const prop = node.prop
-      const value = node.value
+    await db.run(
+      'INSERT INTO value (atrule_id, prop, value) VALUES (?, ?, ?) ON CONFLICT (atrule_id, prop, value) DO UPDATE SET count = count + 1',
+      atruleId,
+      prop,
+      value
+    )
 
-      results[`${template} ${pseudo} ${prop}`] = {
-        template,
-        pseudo,
-        prop,
-        value
-      }
-    } else if (node.type === 'atrule') {
-      const t = `${template}@${node.name} ${node.params}`
+    const row = await db.get(
+      'SELECT id FROM value WHERE atrule_id = ? AND prop = ? AND value = ?',
+      atruleId,
+      prop,
+      value
+    )
 
-      results = {
-        ...results,
-        ...processNodes(node.nodes, pseudo, t)
-      }
-    } else if (node.type === 'rule') {
-      if (pseudo) throw Error('nested rule found')
+    await db.run(
+      'INSERT INTO decl (value_id, name, pseudo) VALUES (?, ?, ?)',
+      row.id,
+      name,
+      pseudo
+    )
+  } else if (node.type === 'atrule') {
+    const atruleName = `@${node.name} ${node.params}`
 
-      const parsed = selectorTokenizer.parse(node.selector)
+    await db.run(
+      'INSERT INTO atrule (parent_atrule_id, name) VALUES (?, ?) ON CONFLICT (name, parent_atrule_id) DO NOTHING',
+      atruleId,
+      atruleName
+    )
 
-      for (const n of parsed.nodes) {
+    const row = await db.get(
+      'SELECT id FROM atrule WHERE parent_atrule_id = ? AND name = ?',
+      atruleId,
+      atruleName
+    )
+
+    await Promise.all(
+      node.nodes.map((n) => buildData(db, name, n, pseudo, row.id))
+    )
+  } else if (node.type === 'rule') {
+    if (pseudo) throw Error('nested rule found')
+
+    const parsed = selectorTokenizer.parse(node.selector)
+
+    await Promise.all(
+      parsed.nodes.map(async (n) => {
         for (const nn of n.nodes) {
           if (nn.type.startsWith('pseudo')) continue
 
           throw Error('non-pseudo selector found')
         }
 
-        results = {
-          ...results,
-          ...processNodes(
-            node.nodes,
-            selectorTokenizer.stringify(n).trim(),
-            template
-          )
-        }
-      }
-    }
+        await buildData(
+          db,
+          name,
+          n,
+          selectorTokenizer.stringify(n).trim(),
+          atruleId
+        )
+      })
+    )
   }
-
-  return results
 }
 
 const run = async (args) => {
-  let id = 0
+  const dbinstance = new sqlite3.Database(':memory:')
+  const db = {
+    run: promisify(dbinstance.run.bind(dbinstance)),
+    all: promisify(dbinstance.all.bind(dbinstance)),
+    get: promisify(dbinstance.get.bind(dbinstance))
+  }
+
+  await Promise.all([
+    db.run(`CREATE TABLE decl (
+      id INTEGER PRIMARY KEY,
+      value_id INTEGER,
+      name TEXT,
+      pseudo TEXT
+    )`),
+    db.run(`CREATE TABLE value (
+      id INTEGER PRIMARY KEY,
+      atrule_id INTEGER,
+      prop TEXT,
+      value TEXT,
+      count INTEGER DEFAULT 1
+    )`),
+    db.run(`CREATE TABLE atrule (
+      id INTEGER PRIMARY KEY,
+      name TEXT,
+      parent_atrule_id INTEGER
+    )`)
+  ])
+
+  await Promise.all([
+    db.run(`CREATE INDEX decl_value ON decl(value_id)`),
+    db.run(`CREATE INDEX value_atrule ON value(atrule_id)`),
+    db.run(`CREATE INDEX atrule_atrule ON atrule(parent_atrule_id)`),
+    db.run(`CREATE UNIQUE INDEX unique_value ON value(atrule_id, prop, value)`),
+    db.run(
+      `CREATE UNIQUE INDEX unique_atrule ON atrule(name, parent_atrule_id)`
+    )
+  ])
+
+  // let id = 0
   const existingIds = []
 
-  const uniqueId = () => {
-    let result = ''
+  // const uniqueId = () => {
+  //   let result = ''
 
-    do {
-      let i = id++
-      result = ''
+  //   do {
+  //     let i = id++
+  //     result = ''
 
-      let r
+  //     let r
 
-      do {
-        r = i % letterCount
-        i = (i - r) / letterCount
+  //     do {
+  //       r = i % letterCount
+  //       i = (i - r) / letterCount
 
-        result = letters[r] + result
-      } while (i)
-    } while (existingIds.includes(result))
+  //       result = letters[r] + result
+  //     } while (i)
+  //   } while (existingIds.includes(result))
 
-    return result
-  }
+  //   return result
+  // }
 
   const cacheBustedInput = `${args.input}?${Date.now()}`
 
@@ -105,8 +164,6 @@ const run = async (args) => {
   let css = ''
 
   const map = {}
-  const tree = {}
-  const ids = {}
 
   if (input._start) {
     css += input._start
@@ -126,9 +183,6 @@ const run = async (args) => {
     })
   }
 
-  const unorderedTemplates = []
-  const orderedTemplates = []
-
   const proxiedStyles = new Proxy(input.styles, {
     get(target, prop, receiver) {
       if ({}.hasOwnProperty.call(target, prop)) {
@@ -143,224 +197,17 @@ const run = async (args) => {
     }
   })
 
+  const promises = []
+
   for (const name of Object.keys(input.styles)) {
     const parsed = postcss.parse(proxiedStyles[name])
-    const processed = Object.values(processNodes(parsed.nodes, '', ''))
-    const bannedLonghands = {}
-    const templates = []
 
-    for (const {template, pseudo, prop} of processed) {
-      if (!templates.includes(template)) templates.push(template)
-
-      if (shorthandLonghands[prop] != null) {
-        const key = `${template} ${pseudo}`
-
-        bannedLonghands[key] = bannedLonghands[key] ?? []
-
-        bannedLonghands[key].push(...shorthandLonghands[prop])
-      }
-    }
-
-    for (const {template, pseudo, prop, value} of processed) {
-      const key = `${template} ${pseudo}`
-
-      if (bannedLonghands?.[key]?.includes(prop)) {
-        console.warn(`${prop} found with shorthand`)
-      }
-
-      tree[template] = tree[template] ?? []
-
-      const index = tree[template].findIndex(
-        (r) => r.prop === prop && r.value === value
-      )
-
-      if (!~index) {
-        tree[template].push({
-          names: [`${name}${pseudo}`],
-          prop,
-          value
-        })
-      } else {
-        tree[template][index].names.push(`${name}${pseudo}`)
-      }
-    }
-
-    let index = 0
-
-    if (templates.length > 1) {
-      for (const template of templates) {
-        const unorderedIndex = unorderedTemplates.indexOf(template)
-
-        if (~unorderedIndex) {
-          unorderedTemplates.splice(unorderedIndex, 1)
-        }
-
-        const orderedIndex = orderedTemplates.indexOf(template)
-
-        if (~orderedIndex) {
-          index = orderedIndex
-        } else {
-          orderedTemplates.splice(++index, 0, template)
-        }
-      }
-    } else if (
-      !unorderedTemplates.includes(templates[0]) &&
-      !orderedTemplates.includes(templates[0])
-    ) {
-      unorderedTemplates.push(templates[0])
+    for (const node of parsed.nodes) {
+      promises.push(buildData(db, name, node))
     }
   }
 
-  const concatedTemplates = unorderedTemplates.concat(orderedTemplates)
-
-  const templateToArray = (template) => template.split('@')
-
-  for (let i = 0; i < concatedTemplates.length; i++) {
-    const template = concatedTemplates[i]
-    const splitAtrules = templateToArray(template)
-    const prevAtrules = templateToArray(concatedTemplates[i - 1] ?? '')
-    const nextAtrules = templateToArray(concatedTemplates[i + 1] ?? '')
-
-    let startLine = ''
-    let endLine = ''
-
-    for (let i = 0; i < splitAtrules.length; i++) {
-      if (splitAtrules[i] !== prevAtrules[i]) {
-        const remainder = splitAtrules.slice(i)
-
-        startLine = remainder
-          .map((part) => (part ? ` @${part} { ` : ''))
-          .join('')
-
-        break
-      }
-    }
-
-    for (let i = splitAtrules.length - 1; i >= 0; i--) {
-      if (splitAtrules[i] !== nextAtrules[i]) {
-        endLine += ' } '
-      } else {
-        break
-      }
-    }
-
-    const branch = tree[template]
-    const remainders = {}
-    const rules = []
-
-    while (branch.length) {
-      const {prop, value, names} = branch.shift()
-
-      if (names.length > 1) {
-        const decls = {
-          [prop]: value
-        }
-
-        let i = 0
-
-        while (i < branch.length) {
-          if (isEqualArray(branch[i].names, names)) {
-            decls[branch[i].prop] = branch[i].value
-
-            branch.splice(i, 1)
-          } else {
-            i++
-          }
-        }
-
-        const selectors = {}
-
-        for (let name of names) {
-          const pseudoIndex = name.indexOf(':')
-          let pseudo = ''
-
-          if (~pseudoIndex) {
-            pseudo = name.substring(pseudoIndex)
-
-            name = name.substring(0, pseudoIndex)
-          }
-
-          let filtered
-
-          if (!pseudo) {
-            filtered = names.filter((name) => !~name.indexOf(':'))
-          } else {
-            filtered = names.filter((name) => {
-              const i = name.indexOf(':')
-
-              if (!~i) return false
-
-              return name.substring(i) === pseudo
-            })
-          }
-
-          filtered = filtered.join()
-
-          selectors[pseudo] = ids[`${filtered} ${pseudo}`] ?? uniqueId()
-
-          ids[`${filtered} ${pseudo}`] = selectors[pseudo]
-
-          map[name] = map[name] ?? []
-
-          if (!map[name].includes(selectors[pseudo])) {
-            map[name].push(selectors[pseudo])
-          }
-        }
-
-        rules.push(
-          `${Object.entries(selectors)
-            .map(([key, val]) => `.${val}${key}`)
-            .join(', ')} { ${Object.keys(decls)
-            .map((prop) => `${prop}: ${decls[prop]}`)
-            .join('; ')}; }`
-        )
-      } else {
-        const name = names[0]
-
-        remainders[name] = remainders[name] ?? {
-          name,
-          decls: {}
-        }
-
-        remainders[name].decls[prop] = value
-      }
-    }
-
-    for (const remainder of Object.values(remainders)) {
-      let name = remainder.name
-
-      const pseudoIndex = name.indexOf(':')
-      let pseudo = ''
-
-      if (~pseudoIndex) {
-        pseudo = name.substring(pseudoIndex)
-
-        name = name.substring(0, pseudoIndex)
-      }
-
-      const cls = ids[name] ?? uniqueId()
-
-      ids[name] = cls
-
-      rules.push(
-        `.${cls}${pseudo} { ${Object.keys(remainder.decls)
-          .map((prop) => `${prop}: ${remainder.decls[prop]}`)
-          .join('; ')}; }`
-      )
-
-      map[name] = map[name] ?? []
-
-      if (!map[name].includes(cls)) {
-        map[name].push(cls)
-      }
-    }
-
-    css += startLine
-
-    css += rules.join('')
-
-    css += endLine
-  }
+  await Promise.all(promises)
 
   css += input._end ?? ''
 
@@ -390,6 +237,16 @@ const run = async (args) => {
     output.js.end(`export const classes = ${stringifiedMap}`)
   }
 
+  const allDecls = await db.all(
+    'SELECT * FROM decl LEFT JOIN value ON decl.value_id = value.id WHERE value.count = 1 ORDER BY decl.name, decl.pseudo'
+  )
+
+  for (const row of allDecls) {
+    console.log(row)
+  }
+
+  dbinstance.close()
+
   return Promise.all([
     finished(output.css).then(() => {
       process.stdout.write(`${gray('[css]')} saved ${args.output}.css\n`)
@@ -400,7 +257,7 @@ const run = async (args) => {
   ])
 }
 
-export default (args) => {
+export default async (args) => {
   args.input = path.join(process.cwd(), args.input)
 
   if (!args['--watch']) {
