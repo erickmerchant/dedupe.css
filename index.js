@@ -7,16 +7,14 @@ import postcss from 'postcss'
 import csso from 'csso'
 import selectorTokenizer from 'css-selector-tokenizer'
 import chokidar from 'chokidar'
-import shorthandLonghands from './lib/shorthand-longhands.js'
-// import isEqualArray from './lib/is-equal-array.js'
-import getClassNames from './lib/get-selectors.js'
 import sqlite3 from 'sqlite3'
+import shorthandLonghands from './lib/shorthand-longhands.js'
+import getClassNames from './lib/get-selectors.js'
+import createGetUniqueId from './lib/create-get-unique-id.js'
 
 const finished = promisify(stream.finished)
 const mkdir = promisify(fs.mkdir)
 const createWriteStream = fs.createWriteStream
-// const letters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-// const letterCount = letters.length
 
 const buildData = async (dbinsert, name, node, pseudo = '', atruleId = 0) => {
   if (node.type === 'decl') {
@@ -24,10 +22,12 @@ const buildData = async (dbinsert, name, node, pseudo = '', atruleId = 0) => {
     const value = node.value
 
     const valueId = await dbinsert(
-      'INSERT INTO value (atrule_id, prop, value) VALUES (?, ?, ?) ON CONFLICT (atrule_id, prop, value) DO UPDATE SET count = count + 1',
+      'INSERT INTO value (atrule_id, prop, value, names) VALUES (?, ?, ?, ?) ON CONFLICT (atrule_id, prop, value) DO UPDATE SET count = count + 1, names = names || "," || ?',
       atruleId,
       prop,
-      value
+      value,
+      name,
+      name
     )
 
     await dbinsert(
@@ -96,58 +96,38 @@ const run = async (args) => {
   }
 
   await dbexec(`
-      CREATE TABLE decl (
-        id INTEGER PRIMARY KEY,
-        value_id INTEGER,
-        name TEXT,
-        pseudo TEXT
-      );
+    CREATE TABLE decl (
+      id INTEGER PRIMARY KEY,
+      value_id INTEGER,
+      name TEXT,
+      pseudo TEXT
+    );
 
-      CREATE TABLE value (
-        id INTEGER PRIMARY KEY,
-        atrule_id INTEGER,
-        prop TEXT,
-        value TEXT,
-        count INTEGER DEFAULT 1
-      );
+    CREATE TABLE value (
+      id INTEGER PRIMARY KEY,
+      atrule_id INTEGER,
+      prop TEXT,
+      value TEXT,
+      count INTEGER DEFAULT 1,
+      names TEXT
+    );
 
-      CREATE TABLE atrule (
-        id INTEGER PRIMARY KEY,
-        name TEXT,
-        parent_atrule_id INTEGER
-      );
-    `)
+    CREATE TABLE atrule (
+      id INTEGER PRIMARY KEY,
+      name TEXT,
+      parent_atrule_id INTEGER
+    );
+  `)
 
   await dbexec(`
-      CREATE INDEX decl_value ON decl(value_id);
-      CREATE INDEX value_atrule ON value(atrule_id);
-      CREATE INDEX atrule_atrule ON atrule(parent_atrule_id);
-      CREATE UNIQUE INDEX unique_value ON value(atrule_id, prop, value);
-      CREATE UNIQUE INDEX unique_atrule ON atrule(name, parent_atrule_id);
-    `)
+    CREATE INDEX decl_value ON decl(value_id);
+    CREATE INDEX value_atrule ON value(atrule_id);
+    CREATE INDEX atrule_atrule ON atrule(parent_atrule_id);
+    CREATE UNIQUE INDEX unique_value ON value(atrule_id, prop, value);
+    CREATE UNIQUE INDEX unique_atrule ON atrule(name, parent_atrule_id);
+  `)
 
-  // let id = 0
   const existingIds = []
-
-  // const uniqueId = () => {
-  //   let result = ''
-
-  //   do {
-  //     let i = id++
-  //     result = ''
-
-  //     let r
-
-  //     do {
-  //       r = i % letterCount
-  //       i = (i - r) / letterCount
-
-  //       result = letters[r] + result
-  //     } while (i)
-  //   } while (existingIds.includes(result))
-
-  //   return result
-  // }
 
   const cacheBustedInput = `${args.input}?${Date.now()}`
 
@@ -242,13 +222,13 @@ const run = async (args) => {
     'SELECT * FROM decl LEFT JOIN value ON decl.value_id = value.id WHERE value.count = 1 ORDER BY decl.name, decl.pseudo'
   )
 
-  console.log(singles.length)
+  console.log(singles)
 
   const multis = await dbselect(
-    'SELECT * FROM decl LEFT JOIN value ON decl.value_id = value.id WHERE value.count > 1 ORDER BY decl.name, decl.pseudo'
+    'SELECT * FROM decl LEFT JOIN value ON decl.value_id = value.id WHERE value.count > 1 ORDER BY value.names, decl.name, decl.pseudo'
   )
 
-  console.log(multis.length)
+  console.log(multis)
 
   await Promise.all(
     Object.entries(shorthandLonghands).map(async ([shorthand, longhands]) => {
