@@ -7,7 +7,7 @@ import postcss from 'postcss'
 import csso from 'csso'
 import selectorTokenizer from 'css-selector-tokenizer'
 import chokidar from 'chokidar'
-// import shorthandLonghands from './lib/shorthand-longhands.js'
+import shorthandLonghands from './lib/shorthand-longhands.js'
 // import isEqualArray from './lib/is-equal-array.js'
 import getClassNames from './lib/get-selectors.js'
 import sqlite3 from 'sqlite3'
@@ -18,48 +18,35 @@ const createWriteStream = fs.createWriteStream
 // const letters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
 // const letterCount = letters.length
 
-const buildData = async (db, name, node, pseudo = '', atruleId = 0) => {
+const buildData = async (dbinsert, name, node, pseudo = '', atruleId = 0) => {
   if (node.type === 'decl') {
     const prop = node.prop
     const value = node.value
 
-    await db.run(
+    const valueId = await dbinsert(
       'INSERT INTO value (atrule_id, prop, value) VALUES (?, ?, ?) ON CONFLICT (atrule_id, prop, value) DO UPDATE SET count = count + 1',
       atruleId,
       prop,
       value
     )
 
-    const row = await db.get(
-      'SELECT id FROM value WHERE atrule_id = ? AND prop = ? AND value = ?',
-      atruleId,
-      prop,
-      value
-    )
-
-    await db.run(
+    await dbinsert(
       'INSERT INTO decl (value_id, name, pseudo) VALUES (?, ?, ?)',
-      row.id,
+      valueId,
       name,
       pseudo
     )
   } else if (node.type === 'atrule') {
     const atruleName = `@${node.name} ${node.params}`
 
-    await db.run(
+    const newAtruleId = await dbinsert(
       'INSERT INTO atrule (parent_atrule_id, name) VALUES (?, ?) ON CONFLICT (name, parent_atrule_id) DO NOTHING',
       atruleId,
       atruleName
     )
 
-    const row = await db.get(
-      'SELECT id FROM atrule WHERE parent_atrule_id = ? AND name = ?',
-      atruleId,
-      atruleName
-    )
-
     await Promise.all(
-      node.nodes.map((n) => buildData(db, name, n, pseudo, row.id))
+      node.nodes.map((n) => buildData(dbinsert, name, n, pseudo, newAtruleId))
     )
   } else if (node.type === 'rule') {
     if (pseudo) throw Error('nested rule found')
@@ -75,7 +62,7 @@ const buildData = async (db, name, node, pseudo = '', atruleId = 0) => {
         }
 
         await buildData(
-          db,
+          dbinsert,
           name,
           n,
           selectorTokenizer.stringify(n).trim(),
@@ -88,42 +75,56 @@ const buildData = async (db, name, node, pseudo = '', atruleId = 0) => {
 
 const run = async (args) => {
   const dbinstance = new sqlite3.Database(':memory:')
-  const db = {
-    run: promisify(dbinstance.run.bind(dbinstance)),
-    all: promisify(dbinstance.all.bind(dbinstance)),
-    get: promisify(dbinstance.get.bind(dbinstance))
+  const dbexec = promisify(dbinstance.exec.bind(dbinstance))
+  const dbselect = promisify(dbinstance.all.bind(dbinstance))
+  const dbinsert = (sql, ...params) => {
+    return new Promise((resolve, reject) => {
+      const statement = dbinstance.prepare(sql)
+
+      statement.bind(...params)
+
+      statement.run((err) => {
+        if (err != null) {
+          reject(err)
+        } else {
+          resolve(statement.lastID)
+        }
+      })
+
+      statement.finalize()
+    })
   }
 
-  await Promise.all([
-    db.run(`CREATE TABLE decl (
-      id INTEGER PRIMARY KEY,
-      value_id INTEGER,
-      name TEXT,
-      pseudo TEXT
-    )`),
-    db.run(`CREATE TABLE value (
-      id INTEGER PRIMARY KEY,
-      atrule_id INTEGER,
-      prop TEXT,
-      value TEXT,
-      count INTEGER DEFAULT 1
-    )`),
-    db.run(`CREATE TABLE atrule (
-      id INTEGER PRIMARY KEY,
-      name TEXT,
-      parent_atrule_id INTEGER
-    )`)
-  ])
+  await dbexec(`
+      CREATE TABLE decl (
+        id INTEGER PRIMARY KEY,
+        value_id INTEGER,
+        name TEXT,
+        pseudo TEXT
+      );
 
-  await Promise.all([
-    db.run(`CREATE INDEX decl_value ON decl(value_id)`),
-    db.run(`CREATE INDEX value_atrule ON value(atrule_id)`),
-    db.run(`CREATE INDEX atrule_atrule ON atrule(parent_atrule_id)`),
-    db.run(`CREATE UNIQUE INDEX unique_value ON value(atrule_id, prop, value)`),
-    db.run(
-      `CREATE UNIQUE INDEX unique_atrule ON atrule(name, parent_atrule_id)`
-    )
-  ])
+      CREATE TABLE value (
+        id INTEGER PRIMARY KEY,
+        atrule_id INTEGER,
+        prop TEXT,
+        value TEXT,
+        count INTEGER DEFAULT 1
+      );
+
+      CREATE TABLE atrule (
+        id INTEGER PRIMARY KEY,
+        name TEXT,
+        parent_atrule_id INTEGER
+      );
+    `)
+
+  await dbexec(`
+      CREATE INDEX decl_value ON decl(value_id);
+      CREATE INDEX value_atrule ON value(atrule_id);
+      CREATE INDEX atrule_atrule ON atrule(parent_atrule_id);
+      CREATE UNIQUE INDEX unique_value ON value(atrule_id, prop, value);
+      CREATE UNIQUE INDEX unique_atrule ON atrule(name, parent_atrule_id);
+    `)
 
   // let id = 0
   const existingIds = []
@@ -203,7 +204,7 @@ const run = async (args) => {
     const parsed = postcss.parse(proxiedStyles[name])
 
     for (const node of parsed.nodes) {
-      promises.push(buildData(db, name, node))
+      promises.push(buildData(dbinsert, name, node))
     }
   }
 
@@ -237,13 +238,40 @@ const run = async (args) => {
     output.js.end(`export const classes = ${stringifiedMap}`)
   }
 
-  const allDecls = await db.all(
+  const singles = await dbselect(
     'SELECT * FROM decl LEFT JOIN value ON decl.value_id = value.id WHERE value.count = 1 ORDER BY decl.name, decl.pseudo'
   )
 
-  for (const row of allDecls) {
-    console.log(row)
-  }
+  console.log(singles.length)
+
+  const multis = await dbselect(
+    'SELECT * FROM decl LEFT JOIN value ON decl.value_id = value.id WHERE value.count > 1 ORDER BY decl.name, decl.pseudo'
+  )
+
+  console.log(multis.length)
+
+  await Promise.all(
+    Object.entries(shorthandLonghands).map(async ([shorthand, longhands]) => {
+      const rows = await dbselect(
+        `SELECT decl1.name, value1.prop as short_prop, value2.prop as long_prop
+          FROM value as value1
+            INNER JOIN decl as decl1 ON value1.id = decl1.value_id
+            INNER JOIN decl as decl2 ON decl1.name = decl2.name
+            INNER JOIN value as value2 ON value2.id = decl2.value_id
+          WHERE value1.prop = ?
+            AND value2.prop IN (${[...longhands].fill('?').join(', ')})
+        `,
+        shorthand,
+        ...longhands
+      )
+
+      for (const row of rows) {
+        console.warn(
+          `${row.short_prop} found with ${row.long_prop} for ${row.name}`
+        )
+      }
+    })
+  )
 
   dbinstance.close()
 
