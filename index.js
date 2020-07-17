@@ -16,14 +16,17 @@ const finished = promisify(stream.finished)
 const mkdir = promisify(fs.mkdir)
 const createWriteStream = fs.createWriteStream
 
-const buildData = async (dbinsert, name, node, pseudo = '', atruleId = 0) => {
+const buildData = async (dbinsert, node, name, pseudo, context = {}) => {
+  context.atruleId = context.atruleId ?? 0
+  context.ordinal = context.ordinal ?? 1
+
   if (node.type === 'decl') {
     const prop = node.prop
     const value = node.value
 
     const valueId = await dbinsert(
       'INSERT INTO value (atrule_id, prop, value, names) VALUES (?, ?, ?, ?) ON CONFLICT (atrule_id, prop, value) DO UPDATE SET count = count + 1, names = names || "," || ?',
-      atruleId,
+      context.atruleId,
       prop,
       value,
       name,
@@ -39,14 +42,44 @@ const buildData = async (dbinsert, name, node, pseudo = '', atruleId = 0) => {
   } else if (node.type === 'atrule') {
     const atruleName = `@${node.name} ${node.params}`
 
+    // let index = 0
+
+    // if (templates.length > 1) {
+    //   for (const template of templates) {
+    //     const unorderedIndex = unorderedTemplates.indexOf(template)
+
+    //     if (~unorderedIndex) {
+    //       unorderedTemplates.splice(unorderedIndex, 1)
+    //     }
+
+    //     const orderedIndex = orderedTemplates.indexOf(template)
+
+    //     if (~orderedIndex) {
+    //       index = orderedIndex
+    //     } else {
+    //       orderedTemplates.splice(++index, 0, template)
+    //     }
+    //   }
+    // } else if (
+    //   !unorderedTemplates.includes(templates[0]) &&
+    //   !orderedTemplates.includes(templates[0])
+    // ) {
+    //   unorderedTemplates.push(templates[0])
+    // }
+
     const newAtruleId = await dbinsert(
-      'INSERT INTO atrule (parent_atrule_id, name) VALUES (?, ?) ON CONFLICT (name, parent_atrule_id) DO NOTHING',
-      atruleId,
-      atruleName
+      'INSERT INTO atrule (parent_atrule_id, name, ordinal) VALUES (?, ?, ?) ON CONFLICT (name, parent_atrule_id) DO NOTHING',
+      context.atruleId,
+      atruleName,
+      context.ordinal++
     )
 
     await Promise.all(
-      node.nodes.map((n) => buildData(dbinsert, name, n, pseudo, newAtruleId))
+      node.nodes.map((n) =>
+        buildData(dbinsert, n, name, pseudo, {
+          atruleId: newAtruleId
+        })
+      )
     )
   } else if (node.type === 'rule') {
     if (pseudo) throw Error('nested rule found')
@@ -63,10 +96,10 @@ const buildData = async (dbinsert, name, node, pseudo = '', atruleId = 0) => {
 
         await buildData(
           dbinsert,
-          name,
           n,
+          name,
           selectorTokenizer.stringify(n).trim(),
-          atruleId
+          context
         )
       })
     )
@@ -115,7 +148,8 @@ const run = async (args) => {
     CREATE TABLE atrule (
       id INTEGER PRIMARY KEY,
       name TEXT,
-      parent_atrule_id INTEGER
+      parent_atrule_id INTEGER,
+      ordinal INTEGER
     );
   `)
 
@@ -182,9 +216,10 @@ const run = async (args) => {
 
   for (const name of Object.keys(input.styles)) {
     const parsed = postcss.parse(proxiedStyles[name])
+    const context = {}
 
     for (const node of parsed.nodes) {
-      promises.push(buildData(dbinsert, name, node))
+      promises.push(buildData(dbinsert, node, name, '', context))
     }
   }
 
@@ -218,17 +253,21 @@ const run = async (args) => {
     output.js.end(`export const classes = ${stringifiedMap}`)
   }
 
+  const atrules = await dbselect('SELECT * FROM atrule ORDER BY ordinal')
+
+  console.log(atrules)
+
   const singles = await dbselect(
     'SELECT * FROM decl LEFT JOIN value ON decl.value_id = value.id WHERE value.count = 1 ORDER BY decl.name, decl.pseudo'
   )
 
-  console.log(singles)
+  console.log(singles.length)
 
   const multis = await dbselect(
     'SELECT * FROM decl LEFT JOIN value ON decl.value_id = value.id WHERE value.count > 1 ORDER BY value.names, decl.name, decl.pseudo'
   )
 
-  console.log(multis)
+  console.log(multis.length)
 
   await Promise.all(
     Object.entries(shorthandLonghands).map(async ([shorthand, longhands]) => {
