@@ -10,79 +10,71 @@ import chokidar from 'chokidar'
 import sqlite3 from 'sqlite3'
 import shorthandLonghands from './lib/shorthand-longhands.js'
 import getClassNames from './lib/get-selectors.js'
-import createGetUniqueId from './lib/create-get-unique-id.js'
+// import createGetUniqueID from './lib/create-get-unique-id.js'
 
 const finished = promisify(stream.finished)
 const mkdir = promisify(fs.mkdir)
 const createWriteStream = fs.createWriteStream
 
-const buildData = async (dbinsert, node, name, pseudo, context = {}) => {
-  context.atruleId = context.atruleId ?? 0
-  context.ordinal = context.ordinal ?? 1
-
+const buildData = async (db, node, context = {}) => {
   if (node.type === 'decl') {
     const prop = node.prop
     const value = node.value
 
-    const valueId = await dbinsert(
-      'INSERT INTO value (atrule_id, prop, value, names) VALUES (?, ?, ?, ?) ON CONFLICT (atrule_id, prop, value) DO UPDATE SET count = count + 1, names = names || "," || ?',
-      context.atruleId,
+    await db.run(
+      'INSERT INTO decl (atrule_id, prop, value, names) VALUES (?, ?, ?, ?) ON CONFLICT (atrule_id, prop, value) DO UPDATE SET count = count + 1, names = names || "," || ?',
+      context.parentAtruleID ?? 0,
       prop,
       value,
-      name,
-      name
+      context.name,
+      context.name
     )
 
-    await dbinsert(
-      'INSERT INTO decl (value_id, name, pseudo) VALUES (?, ?, ?)',
-      valueId,
-      name,
-      pseudo
+    const {id: declID} = await db.get(
+      'SELECT id FROM decl WHERE atrule_id = ? AND prop = ? AND value = ?',
+      context.parentAtruleID ?? 0,
+      prop,
+      value
+    )
+
+    await db.run(
+      'INSERT INTO rule (decl_id, name, pseudo) VALUES (?, ?, ?)',
+      declID,
+      context.name,
+      context.pseudo ?? ''
     )
   } else if (node.type === 'atrule') {
     const atruleName = `@${node.name} ${node.params}`
 
-    // let index = 0
-
-    // if (templates.length > 1) {
-    //   for (const template of templates) {
-    //     const unorderedIndex = unorderedTemplates.indexOf(template)
-
-    //     if (~unorderedIndex) {
-    //       unorderedTemplates.splice(unorderedIndex, 1)
-    //     }
-
-    //     const orderedIndex = orderedTemplates.indexOf(template)
-
-    //     if (~orderedIndex) {
-    //       index = orderedIndex
-    //     } else {
-    //       orderedTemplates.splice(++index, 0, template)
-    //     }
-    //   }
-    // } else if (
-    //   !unorderedTemplates.includes(templates[0]) &&
-    //   !orderedTemplates.includes(templates[0])
-    // ) {
-    //   unorderedTemplates.push(templates[0])
-    // }
-
-    const newAtruleId = await dbinsert(
-      'INSERT INTO atrule (parent_atrule_id, name, ordinal) VALUES (?, ?, ?) ON CONFLICT (name, parent_atrule_id) DO NOTHING',
-      context.atruleId,
-      atruleName,
-      context.ordinal++
+    await db.run(
+      'INSERT INTO atrule (parent_atrule_id, name) VALUES (?, ?) ON CONFLICT (name, parent_atrule_id) DO NOTHING',
+      context.parentAtruleID ?? 0,
+      atruleName
     )
 
-    await Promise.all(
-      node.nodes.map((n) =>
-        buildData(dbinsert, n, name, pseudo, {
-          atruleId: newAtruleId
+    const {id: atruleID} = await db.get(
+      'SELECT id FROM atrule WHERE parent_atrule_id = ? AND name = ?',
+      context.parentAtruleID ?? 0,
+      atruleName
+    )
+
+    await Promise.all([
+      db.run(
+        'INSERT INTO atrule_position (name, atrule_id, position) VALUES (?, ?, ?)',
+        context.name,
+        atruleID,
+        context.position++
+      ),
+      ...node.nodes.map(async (n) =>
+        buildData(db, n, {
+          ...context,
+          position: 0,
+          parentID: atruleID
         })
       )
-    )
+    ])
   } else if (node.type === 'rule') {
-    if (pseudo) throw Error('nested rule found')
+    if (context.pseudo) throw Error('nested rule found')
 
     const parsed = selectorTokenizer.parse(node.selector)
 
@@ -94,13 +86,9 @@ const buildData = async (dbinsert, node, name, pseudo, context = {}) => {
           throw Error('non-pseudo selector found')
         }
 
-        await buildData(
-          dbinsert,
-          n,
-          name,
-          selectorTokenizer.stringify(n).trim(),
-          context
-        )
+        const pseudo = selectorTokenizer.stringify(n).trim()
+
+        await buildData(db, n, {...context, pseudo})
       })
     )
   }
@@ -108,35 +96,22 @@ const buildData = async (dbinsert, node, name, pseudo, context = {}) => {
 
 const run = async (args) => {
   const dbinstance = new sqlite3.Database(':memory:')
-  const dbexec = promisify(dbinstance.exec.bind(dbinstance))
-  const dbselect = promisify(dbinstance.all.bind(dbinstance))
-  const dbinsert = (sql, ...params) => {
-    return new Promise((resolve, reject) => {
-      const statement = dbinstance.prepare(sql)
-
-      statement.bind(...params)
-
-      statement.run((err) => {
-        if (err != null) {
-          reject(err)
-        } else {
-          resolve(statement.lastID)
-        }
-      })
-
-      statement.finalize()
-    })
+  const db = {
+    exec: promisify(dbinstance.exec.bind(dbinstance)),
+    all: promisify(dbinstance.all.bind(dbinstance)),
+    get: promisify(dbinstance.get.bind(dbinstance)),
+    run: promisify(dbinstance.run.bind(dbinstance))
   }
 
-  await dbexec(`
-    CREATE TABLE decl (
+  await db.exec(`
+    CREATE TABLE rule (
       id INTEGER PRIMARY KEY,
-      value_id INTEGER,
+      decl_id INTEGER,
       name TEXT,
       pseudo TEXT
     );
 
-    CREATE TABLE value (
+    CREATE TABLE decl (
       id INTEGER PRIMARY KEY,
       atrule_id INTEGER,
       prop TEXT,
@@ -148,20 +123,24 @@ const run = async (args) => {
     CREATE TABLE atrule (
       id INTEGER PRIMARY KEY,
       name TEXT,
-      parent_atrule_id INTEGER,
-      ordinal INTEGER
+      parent_atrule_id INTEGER
     );
-  `)
 
-  await dbexec(`
-    CREATE INDEX decl_value ON decl(value_id);
-    CREATE INDEX value_atrule ON value(atrule_id);
+    CREATE TABLE atrule_position (
+      id INTEGER PRIMARY KEY,
+      name TEXT,
+      atrule_id INTEGER,
+      position INTEGER
+    );
+
+    CREATE INDEX rule_decl ON rule(decl_id);
+    CREATE INDEX decl_atrule ON decl(atrule_id);
     CREATE INDEX atrule_atrule ON atrule(parent_atrule_id);
-    CREATE UNIQUE INDEX unique_value ON value(atrule_id, prop, value);
+    CREATE UNIQUE INDEX unique_decl ON decl(atrule_id, prop, value);
     CREATE UNIQUE INDEX unique_atrule ON atrule(name, parent_atrule_id);
   `)
 
-  const existingIds = []
+  const existingIDs = []
 
   const cacheBustedInput = `${args.input}?${Date.now()}`
 
@@ -186,7 +165,7 @@ const run = async (args) => {
     postcss.parse(input._start).walkRules((rule) => {
       const parsed = selectorTokenizer.parse(rule.selector)
 
-      existingIds.push(...getClassNames(parsed))
+      existingIDs.push(...getClassNames(parsed))
     })
   }
 
@@ -194,7 +173,7 @@ const run = async (args) => {
     postcss.parse(input._end).walkRules((rule) => {
       const parsed = selectorTokenizer.parse(rule.selector)
 
-      existingIds.push(...getClassNames(parsed))
+      existingIDs.push(...getClassNames(parsed))
     })
   }
 
@@ -216,10 +195,11 @@ const run = async (args) => {
 
   for (const name of Object.keys(input.styles)) {
     const parsed = postcss.parse(proxiedStyles[name])
-    const context = {}
+
+    const context = {name, position: 0}
 
     for (const node of parsed.nodes) {
-      promises.push(buildData(dbinsert, node, name, '', context))
+      promises.push(buildData(db, node, context))
     }
   }
 
@@ -253,32 +233,36 @@ const run = async (args) => {
     output.js.end(`export const classes = ${stringifiedMap}`)
   }
 
-  const atrules = await dbselect('SELECT * FROM atrule ORDER BY ordinal')
+  const atrules = await db.all('SELECT * FROM atrule')
 
   console.log(atrules)
 
-  const singles = await dbselect(
-    'SELECT * FROM decl LEFT JOIN value ON decl.value_id = value.id WHERE value.count = 1 ORDER BY decl.name, decl.pseudo'
+  const atrulePositions = await db.all('SELECT * FROM atrule_position')
+
+  console.log(atrulePositions)
+
+  const singles = await db.all(
+    'SELECT * FROM rule LEFT JOIN decl ON rule.decl_id = decl.id WHERE decl.count = 1 ORDER BY rule.name, rule.pseudo'
   )
 
-  console.log(singles.length)
+  console.log(singles)
 
-  const multis = await dbselect(
-    'SELECT * FROM decl LEFT JOIN value ON decl.value_id = value.id WHERE value.count > 1 ORDER BY value.names, decl.name, decl.pseudo'
+  const multis = await db.all(
+    'SELECT * FROM rule LEFT JOIN decl ON rule.decl_id = decl.id WHERE decl.count > 1 ORDER BY decl.names, rule.name, rule.pseudo'
   )
 
-  console.log(multis.length)
+  console.log(multis)
 
   await Promise.all(
     Object.entries(shorthandLonghands).map(async ([shorthand, longhands]) => {
-      const rows = await dbselect(
-        `SELECT decl1.name, value1.prop as short_prop, value2.prop as long_prop
-          FROM value as value1
-            INNER JOIN decl as decl1 ON value1.id = decl1.value_id
-            INNER JOIN decl as decl2 ON decl1.name = decl2.name
-            INNER JOIN value as value2 ON value2.id = decl2.value_id
-          WHERE value1.prop = ?
-            AND value2.prop IN (${[...longhands].fill('?').join(', ')})
+      const rows = await db.all(
+        `SELECT rule1.name, decl1.prop as short_prop, decl2.prop as long_prop
+          FROM decl as decl1
+            INNER JOIN rule as rule1 ON decl1.id = rule1.decl_id
+            INNER JOIN rule as rule2 ON rule1.name = rule2.name
+            INNER JOIN decl as decl2 ON decl2.id = rule2.decl_id
+          WHERE decl1.prop = ?
+            AND decl2.prop IN (${[...longhands].fill('?').join(', ')})
         `,
         shorthand,
         ...longhands
