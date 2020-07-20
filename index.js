@@ -237,21 +237,54 @@ const run = async (args) => {
 
   console.log(atrules)
 
-  const atrulePositions = await db.all('SELECT * FROM atrule_position')
+  const atrulePositionsMultis = await db.all(
+    'SELECT * FROM atrule_position WHERE name IN (SELECT name FROM atrule_position GROUP BY name HAVING count(id) > 1) ORDER BY name, position'
+  )
 
-  console.log(atrulePositions)
+  const atrulePositionsSingles = await db.all(
+    'SELECT * FROM atrule_position WHERE name IN (SELECT name FROM atrule_position GROUP BY name HAVING count(id) = 1)'
+  )
+
+  const unorderedAtruleIDs = []
+  const orderedAtruleIDs = []
+
+  for (const {atrule_id: atruleID} of atrulePositionsSingles) {
+    unorderedAtruleIDs.push(atruleID)
+  }
+
+  let index = 0
+
+  for (const {atrule_id: atruleID} of atrulePositionsMultis) {
+    const unorderedIndex = unorderedAtruleIDs.indexOf(atruleID)
+
+    if (~unorderedIndex) {
+      unorderedAtruleIDs.splice(unorderedIndex, 1)
+    }
+
+    const orderedIndex = orderedAtruleIDs.indexOf(atruleID)
+
+    if (~orderedIndex) {
+      index = orderedIndex
+    } else {
+      orderedAtruleIDs.splice(++index, 0, atruleID)
+    }
+  }
+
+  const sortedAtruleIDs = unorderedAtruleIDs.concat(orderedAtruleIDs)
+
+  console.log(sortedAtruleIDs)
 
   const singles = await db.all(
     'SELECT * FROM rule LEFT JOIN decl ON rule.decl_id = decl.id WHERE decl.count = 1 ORDER BY rule.name, rule.pseudo'
   )
 
-  console.log(singles)
+  console.log(singles.length)
 
   const multis = await db.all(
     'SELECT * FROM rule LEFT JOIN decl ON rule.decl_id = decl.id WHERE decl.count > 1 ORDER BY decl.names, rule.name, rule.pseudo'
   )
 
-  console.log(multis)
+  console.log(multis.length)
 
   await Promise.all(
     Object.entries(shorthandLonghands).map(async ([shorthand, longhands]) => {
