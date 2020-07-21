@@ -69,7 +69,7 @@ const buildData = async (db, node, context = {}) => {
         buildData(db, n, {
           ...context,
           position: 0,
-          parentID: atruleID
+          parentAtruleID: atruleID
         })
       )
     ])
@@ -96,6 +96,7 @@ const buildData = async (db, node, context = {}) => {
 
 const run = async (args) => {
   const dbinstance = new sqlite3.Database(':memory:')
+
   const db = {
     exec: promisify(dbinstance.exec.bind(dbinstance)),
     all: promisify(dbinstance.all.bind(dbinstance)),
@@ -205,37 +206,7 @@ const run = async (args) => {
 
   await Promise.all(promises)
 
-  css += input._end ?? ''
-
-  if (!args['--dev']) {
-    css = csso.minify(css, {restructure: false}).css
-  }
-
-  output.css.end(css)
-
-  for (const name of Object.keys(map)) {
-    map[name] = map[name].join(' ')
-  }
-
-  const stringifiedMap = JSON.stringify(map, null, 2)
-
-  if (args['--dev']) {
-    output.js.end(`export const classes = new Proxy(${stringifiedMap}, {
-      get(target, prop) {
-        if ({}.hasOwnProperty.call(target, prop)) {
-          return target[prop]
-        }
-
-        throw Error(\`\${prop} is undefined\`)
-      }
-    })`)
-  } else {
-    output.js.end(`export const classes = ${stringifiedMap}`)
-  }
-
   const atrules = await db.all('SELECT * FROM atrule')
-
-  console.log(atrules)
 
   const atrulePositionsMultis = await db.all(
     'SELECT * FROM atrule_position WHERE name IN (SELECT name FROM atrule_position GROUP BY name HAVING count(id) > 1) ORDER BY name, position'
@@ -272,7 +243,21 @@ const run = async (args) => {
 
   const sortedAtruleIDs = unorderedAtruleIDs.concat(orderedAtruleIDs)
 
-  console.log(sortedAtruleIDs)
+  atrules.sort(
+    (a, b) => sortedAtruleIDs.indexOf(a) - sortedAtruleIDs.indexOf(b)
+  )
+
+  const buildCSS = (searchID, i = 0) => {
+    for (const {parent_atrule_id: parentAtrulID, name, id} of atrules) {
+      if (parentAtrulID === searchID) {
+        console.log(`${' '.repeat(i)}${name}`)
+
+        buildCSS(id, i + 1)
+      }
+    }
+  }
+
+  buildCSS(0)
 
   const singles = await db.all(
     'SELECT * FROM rule LEFT JOIN decl ON rule.decl_id = decl.id WHERE decl.count = 1 ORDER BY rule.name, rule.pseudo'
@@ -308,6 +293,34 @@ const run = async (args) => {
       }
     })
   )
+
+  css += input._end ?? ''
+
+  if (!args['--dev']) {
+    css = csso.minify(css, {restructure: false}).css
+  }
+
+  output.css.end(css)
+
+  for (const name of Object.keys(map)) {
+    map[name] = map[name].join(' ')
+  }
+
+  const stringifiedMap = JSON.stringify(map, null, 2)
+
+  if (args['--dev']) {
+    output.js.end(`export const classes = new Proxy(${stringifiedMap}, {
+      get(target, prop) {
+        if ({}.hasOwnProperty.call(target, prop)) {
+          return target[prop]
+        }
+
+        throw Error(\`\${prop} is undefined\`)
+      }
+    })`)
+  } else {
+    output.js.end(`export const classes = ${stringifiedMap}`)
+  }
 
   dbinstance.close()
 
