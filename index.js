@@ -10,7 +10,7 @@ import chokidar from 'chokidar'
 import sqlite3 from 'sqlite3'
 import shorthandLonghands from './lib/shorthand-longhands.js'
 import getClassNames from './lib/get-selectors.js'
-// import createGetUniqueID from './lib/create-get-unique-id.js'
+import createGetUniqueID from './lib/create-get-unique-id.js'
 
 const finished = promisify(stream.finished)
 const mkdir = promisify(fs.mkdir)
@@ -22,12 +22,10 @@ const buildData = async (db, node, context = {}) => {
     const value = node.value
 
     await db.run(
-      'INSERT INTO decl (atrule_id, prop, value, names) VALUES (?, ?, ?, ?) ON CONFLICT (atrule_id, prop, value) DO UPDATE SET count = count + 1, names = names || "," || ?',
+      'INSERT INTO decl (atrule_id, prop, value) VALUES (?, ?, ?) ON CONFLICT (atrule_id, prop, value) DO UPDATE SET count = count + 1',
       context.parentAtruleID ?? 0,
       prop,
-      value,
-      context.name,
-      context.name
+      value
     )
 
     const {id: declID} = await db.get(
@@ -88,7 +86,9 @@ const buildData = async (db, node, context = {}) => {
 
         const pseudo = selectorTokenizer.stringify(n).trim()
 
-        await buildData(db, n, {...context, pseudo})
+        await Promise.all(
+          node.nodes.map((node) => buildData(db, node, {...context, pseudo}))
+        )
       })
     )
   }
@@ -117,8 +117,7 @@ const run = async (args) => {
       atrule_id INTEGER,
       prop TEXT,
       value TEXT,
-      count INTEGER DEFAULT 1,
-      names TEXT
+      count INTEGER DEFAULT 1
     );
 
     CREATE TABLE atrule (
@@ -177,6 +176,8 @@ const run = async (args) => {
       existingIDs.push(...getClassNames(parsed))
     })
   }
+
+  const getUniqueID = createGetUniqueID(existingIDs)
 
   const proxiedStyles = new Proxy(input.styles, {
     get(target, prop, receiver) {
@@ -244,32 +245,120 @@ const run = async (args) => {
   const sortedAtruleIDs = unorderedAtruleIDs.concat(orderedAtruleIDs)
 
   atrules.sort(
-    (a, b) => sortedAtruleIDs.indexOf(a) - sortedAtruleIDs.indexOf(b)
+    (a, b) => sortedAtruleIDs.indexOf(a.id) - sortedAtruleIDs.indexOf(b.id)
   )
 
-  const buildCSS = (searchID, i = 0) => {
-    for (const {parent_atrule_id: parentAtrulID, name, id} of atrules) {
-      if (parentAtrulID === searchID) {
-        console.log(`${' '.repeat(i)}${name}`)
+  const buildCSS = async (searchID) => {
+    // eslint-disable-next-line no-await-in-loop
+    const singles = await db.all(
+      'SELECT * FROM rule LEFT JOIN decl ON rule.decl_id = decl.id WHERE decl.atrule_id = ? AND decl.count = 1 ORDER BY rule.name, rule.pseudo',
+      searchID
+    )
 
-        buildCSS(id, i + 1)
+    let prevSingle
+
+    if (singles.length) {
+      let id
+
+      for (const single of singles) {
+        if (single.name !== prevSingle?.name) {
+          id = getUniqueID()
+
+          if (map[single.name] == null) {
+            map[single.name] = []
+          }
+
+          map[single.name].push(id)
+        }
+
+        if (
+          single.name !== prevSingle?.name ||
+          single.pseudo !== prevSingle?.pseudo
+        ) {
+          if (prevSingle != null) css += `} `
+
+          css += `.${id}${single.pseudo} { `
+        }
+
+        css += `${single.prop}: ${single.value}; `
+
+        prevSingle = single
+      }
+
+      css += `} `
+    }
+
+    // eslint-disable-next-line no-await-in-loop
+    const multis = await db.all(
+      'SELECT decl.*, GROUP_CONCAT(rule.name) as names, GROUP_CONCAT(rule.pseudo) as pseudos FROM rule INNER JOIN decl ON rule.decl_id = decl.id WHERE decl.atrule_id = ? AND decl.count > 1 GROUP BY decl.id ORDER BY names, pseudos',
+      searchID
+    )
+
+    let prevMulti
+
+    if (multis.length) {
+      for (const multi of multis) {
+        if (
+          prevMulti?.names !== multi.names ||
+          prevMulti?.pseudos !== multi.pseudos
+        ) {
+          // eslint-disable-next-line no-await-in-loop
+          const rules = await db.all(
+            'SELECT name, pseudo FROM rule WHERE decl_id = ? ORDER BY pseudo',
+            multi.id
+          )
+
+          if (prevMulti != null) css += `} `
+
+          let prevPseudo
+          let id
+          const selectors = []
+
+          for (const rule of rules) {
+            if (prevPseudo !== rule.pseudo) {
+              id = getUniqueID()
+
+              selectors.push(`.${id}${rule.pseudo} `)
+            }
+
+            if (map[rule.name] == null) {
+              map[rule.name] = []
+            }
+
+            map[rule.name].push(id)
+
+            prevPseudo = rule.pseudo
+          }
+
+          css += `${selectors.join(', ')} { `
+        }
+
+        css += `${multi.prop}: ${multi.value}; `
+
+        prevMulti = multi
+      }
+
+      css += `} ` // eslint-disable-line require-atomic-updates
+    }
+
+    for (let i = 0; i < atrules.length; i++) {
+      const {parent_atrule_id: parentAtrulID, name, id} = atrules[i]
+
+      if (parentAtrulID === searchID) {
+        css += `${name} { ` // eslint-disable-line require-atomic-updates
+
+        await buildCSS(id) // eslint-disable-line no-await-in-loop
+
+        atrules.splice(i, 1)
+
+        i--
+
+        css += '} ' // eslint-disable-line require-atomic-updates
       }
     }
   }
 
-  buildCSS(0)
-
-  const singles = await db.all(
-    'SELECT * FROM rule LEFT JOIN decl ON rule.decl_id = decl.id WHERE decl.count = 1 ORDER BY rule.name, rule.pseudo'
-  )
-
-  console.log(singles.length)
-
-  const multis = await db.all(
-    'SELECT * FROM rule LEFT JOIN decl ON rule.decl_id = decl.id WHERE decl.count > 1 ORDER BY decl.names, rule.name, rule.pseudo'
-  )
-
-  console.log(multis.length)
+  await buildCSS(0)
 
   await Promise.all(
     Object.entries(shorthandLonghands).map(async ([shorthand, longhands]) => {
@@ -294,10 +383,10 @@ const run = async (args) => {
     })
   )
 
-  css += input._end ?? ''
+  css += input._end ?? '' // eslint-disable-line require-atomic-updates
 
   if (!args['--dev']) {
-    css = csso.minify(css, {restructure: false}).css
+    css = csso.minify(css, {restructure: false}).css // eslint-disable-line require-atomic-updates
   }
 
   output.css.end(css)
