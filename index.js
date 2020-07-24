@@ -45,21 +45,21 @@ const buildData = async (db, node, context = {}) => {
       atruleName
     )
 
-    await Promise.all([
-      db.run(
-        'INSERT INTO atrulePosition (atruleID, position, name) VALUES (?, ?, ?)',
-        atruleID,
-        context.position++,
-        context.name
-      ),
-      ...node.nodes.map(async (n) =>
-        buildData(db, n, {
-          ...context,
-          position: 0,
-          parentAtruleID: atruleID
-        })
-      )
-    ])
+    await db.run(
+      'INSERT INTO atrulePosition (atruleID, position, name) VALUES (?, ?, ?)',
+      atruleID,
+      context.position++,
+      context.name
+    )
+
+    for (const n of node.nodes) {
+      // eslint-disable-next-line no-await-in-loop
+      await buildData(db, n, {
+        ...context,
+        position: 0,
+        parentAtruleID: atruleID
+      })
+    }
   } else if (node.type === 'rule') {
     if (context.pseudo) throw Error('nested rule found')
 
@@ -75,9 +75,10 @@ const buildData = async (db, node, context = {}) => {
 
         const pseudo = selectorTokenizer.stringify(n).trim()
 
-        await Promise.all(
-          node.nodes.map((node) => buildData(db, node, {...context, pseudo}))
-        )
+        for (const n of node.nodes) {
+          // eslint-disable-next-line no-await-in-loop
+          await buildData(db, n, {...context, pseudo})
+        }
       })
     )
   }
@@ -183,19 +184,16 @@ const run = async (args) => {
     }
   })
 
-  const promises = []
-
   for (const name of Object.keys(input.styles)) {
     const parsed = postcss.parse(proxiedStyles[name])
 
     const context = {name, position: 0}
 
     for (const node of parsed.nodes) {
-      promises.push(buildData(db, node, context))
+      // eslint-disable-next-line no-await-in-loop
+      await buildData(db, node, context)
     }
   }
-
-  await Promise.all(promises)
 
   const atrules = await db.all('SELECT * FROM atrule')
 
@@ -241,7 +239,7 @@ const run = async (args) => {
   const buildCSS = async (searchID) => {
     // eslint-disable-next-line no-await-in-loop
     const singles = await db.all(
-      'SELECT * FROM decl WHERE atruleID = ? GROUP BY atruleID, pseudo, prop, value HAVING COUNT(id) = 1',
+      'SELECT * FROM decl WHERE atruleID = ? GROUP BY atruleID, prop, value HAVING COUNT(id) = 1',
       searchID
     )
 
@@ -276,7 +274,7 @@ const run = async (args) => {
 
     // eslint-disable-next-line no-await-in-loop
     const multis = await db.all(
-      'SELECT *, GROUP_CONCAT(name) as names, GROUP_CONCAT(pseudo) as pseudos FROM decl WHERE atruleID = ? GROUP BY atruleID, pseudo, prop, value HAVING COUNT(id) > 1 ORDER BY names, pseudos',
+      'SELECT *, GROUP_CONCAT(name) as names, GROUP_CONCAT(pseudo) as pseudos FROM decl WHERE atruleID = ? GROUP BY atruleID, prop, value HAVING COUNT(id) > 1 ORDER BY names, pseudos',
       searchID
     )
 
@@ -290,9 +288,8 @@ const run = async (args) => {
         ) {
           // eslint-disable-next-line no-await-in-loop
           const rules = await db.all(
-            'SELECT name, pseudo FROM decl WHERE atruleID = ? AND pseudo = ? AND prop = ? AND value = ? ORDER BY pseudo',
+            'SELECT name, pseudo FROM decl WHERE atruleID = ? AND prop = ? AND value = ? ORDER BY name, pseudo',
             multi.atruleID,
-            multi.pseudo,
             multi.prop,
             multi.value
           )
