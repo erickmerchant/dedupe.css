@@ -42,7 +42,11 @@
     "node": ">=14.3"
   },
   "eslintConfig": {
-    "extends": "@erickmerchant/eslint-config"
+    "extends": "@erickmerchant/eslint-config",
+    "rules": {
+      "no-await-in-loop": "off",
+      "require-atomic-updates": "off"
+    }
   },
   "prettier": "@erickmerchant/prettier-config"
 }

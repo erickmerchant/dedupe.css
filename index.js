@@ -53,7 +53,6 @@ const buildData = async (db, node, context = {}) => {
     )
 
     for (const n of node.nodes) {
-      // eslint-disable-next-line no-await-in-loop
       await buildData(db, n, {
         ...context,
         position: 0,
@@ -76,7 +75,6 @@ const buildData = async (db, node, context = {}) => {
         const pseudo = selectorTokenizer.stringify(n).trim()
 
         for (const n of node.nodes) {
-          // eslint-disable-next-line no-await-in-loop
           await buildData(db, n, {...context, pseudo})
         }
       })
@@ -190,7 +188,6 @@ const run = async (args) => {
     const context = {name, position: 0}
 
     for (const node of parsed.nodes) {
-      // eslint-disable-next-line no-await-in-loop
       await buildData(db, node, context)
     }
   }
@@ -237,7 +234,6 @@ const run = async (args) => {
   )
 
   const buildCSS = async (searchID) => {
-    // eslint-disable-next-line no-await-in-loop
     const singles = await db.all(
       'SELECT * FROM decl WHERE atruleID = ? GROUP BY atruleID, prop, value HAVING COUNT(id) = 1',
       searchID
@@ -272,7 +268,6 @@ const run = async (args) => {
       css += `} `
     }
 
-    // eslint-disable-next-line no-await-in-loop
     const multis = await db.all(
       'SELECT *, GROUP_CONCAT(name) as names, GROUP_CONCAT(pseudo) as pseudos FROM decl WHERE atruleID = ? GROUP BY atruleID, prop, value HAVING COUNT(id) > 1 ORDER BY names, pseudos',
       searchID
@@ -286,7 +281,6 @@ const run = async (args) => {
           prevMulti?.names !== multi.names ||
           prevMulti?.pseudos !== multi.pseudos
         ) {
-          // eslint-disable-next-line no-await-in-loop
           const rules = await db.all(
             'SELECT name, pseudo FROM decl WHERE atruleID = ? AND prop = ? AND value = ? ORDER BY name, pseudo',
             multi.atruleID,
@@ -320,22 +314,22 @@ const run = async (args) => {
         prevMulti = multi
       }
 
-      css += `} ` // eslint-disable-line require-atomic-updates
+      css += `} `
     }
 
     for (let i = 0; i < atrules.length; i++) {
       const {parentAtruleID, name, id} = atrules[i]
 
       if (parentAtruleID === searchID) {
-        css += `${name} { ` // eslint-disable-line require-atomic-updates
+        css += `${name} { `
 
-        await buildCSS(id) // eslint-disable-line no-await-in-loop
+        await buildCSS(id)
 
         atrules.splice(i, 1)
 
         i--
 
-        css += '} ' // eslint-disable-line require-atomic-updates
+        css += '} '
       }
     }
   }
@@ -364,10 +358,10 @@ const run = async (args) => {
     })
   )
 
-  css += input._end ?? '' // eslint-disable-line require-atomic-updates
+  css += input._end ?? ''
 
   if (!args['--dev']) {
-    css = csso.minify(css, {restructure: false}).css // eslint-disable-line require-atomic-updates
+    css = csso.minify(css, {restructure: false}).css
   }
 
   output.css.end(css)
