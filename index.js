@@ -282,7 +282,7 @@ const run = async (args) => {
           prevMulti?.pseudos !== multi.pseudos
         ) {
           const rules = await db.all(
-            'SELECT name, pseudo FROM decl WHERE atruleID = ? AND prop = ? AND value = ? ORDER BY name, pseudo',
+            'SELECT name, pseudo FROM decl WHERE atruleID = ? AND prop = ? AND value = ? ORDER BY pseudo, name',
             multi.atruleID,
             multi.prop,
             multi.value
