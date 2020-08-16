@@ -235,7 +235,7 @@ const run = async (args) => {
 
   const buildCSS = async (searchID) => {
     const singles = await db.all(
-      'SELECT * FROM decl WHERE atruleID = ? GROUP BY atruleID, prop, value HAVING COUNT(id) = 1',
+      'SELECT *, GROUP_CONCAT(name) as names, GROUP_CONCAT(pseudo) as pseudos FROM decl WHERE atruleID = ? GROUP BY atruleID, prop, value HAVING COUNT(id) = 1 ORDER BY names, pseudos',
       searchID
     )
 
