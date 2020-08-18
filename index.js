@@ -82,7 +82,7 @@ const buildData = async (db, node, context = {}) => {
   }
 }
 
-const run = async (args) => {
+const run = async (args, importAndWatch) => {
   const dbinstance = new sqlite3.Database(':memory:')
 
   const db = {
@@ -127,6 +127,12 @@ const run = async (args) => {
 
   const input = await import(cacheBustedInput)
 
+  let inputStyles = input.styles
+
+  if (typeof inputStyles === 'function') {
+    inputStyles = await inputStyles(importAndWatch)
+  }
+
   await mkdir(path.dirname(path.join(process.cwd(), args.output)), {
     recursive: true
   })
@@ -168,7 +174,7 @@ const run = async (args) => {
 
   const getUniqueID = createGetUniqueID(existingIDs)
 
-  const proxiedStyles = new Proxy(input.styles, {
+  const proxiedStyles = new Proxy(inputStyles, {
     get(target, prop, receiver) {
       if ({}.hasOwnProperty.call(target, prop)) {
         if (typeof target[prop] === 'function') {
@@ -182,7 +188,7 @@ const run = async (args) => {
     }
   })
 
-  for (const name of Object.keys(input.styles)) {
+  for (const name of Object.keys(inputStyles)) {
     const parsed = postcss.parse(proxiedStyles[name])
 
     const context = {name, position: 0}
@@ -400,13 +406,35 @@ const run = async (args) => {
 export default async (args) => {
   args.input = path.join(process.cwd(), args.input)
 
-  if (!args['--watch']) {
-    return run(args)
+  let importAndWatch = (file) => {
+    return import(path.join(path.dirname(args.input), file))
   }
 
-  run(args)
+  if (!args['--watch']) {
+    return run(args, importAndWatch)
+  }
 
-  chokidar.watch(args.input, {ignoreInitial: true}).on('change', () => {
-    run(args)
+  const watcher = chokidar.watch(args.input, {ignoreInitial: true})
+
+  const imported = []
+
+  importAndWatch = (file) => {
+    file = path.join(path.dirname(args.input), file)
+
+    imported.push(file)
+
+    watcher.add(file)
+
+    return import(`${file}?${Date.now()}`)
+  }
+
+  run(args, importAndWatch)
+
+  watcher.on('change', () => {
+    watcher.unwatch(imported)
+
+    imported.splice(0, imported.length)
+
+    run(args, importAndWatch)
   })
 }
