@@ -22,9 +22,10 @@ const buildData = async (db, node, context = {}) => {
     const value = node.value
 
     await db.run(
-      'INSERT INTO decl (atruleID, name, pseudo, prop, value) VALUES (?, ?, ?, ?, ?) ON CONFLICT (atruleID, name, pseudo, prop) DO UPDATE set value = ?',
+      'INSERT INTO decl (atruleID, name, namespace, pseudo, prop, value) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT (atruleID, name, namespace, pseudo, prop) DO UPDATE set value = ?',
       context.parentAtruleID ?? 0,
       context.name,
+      context.namespace,
       context.pseudo ?? '',
       prop,
       value,
@@ -46,10 +47,11 @@ const buildData = async (db, node, context = {}) => {
     )
 
     await db.run(
-      'INSERT INTO atrulePosition (atruleID, position, name) VALUES (?, ?, ?)',
+      'INSERT INTO atrulePosition (atruleID, position, name, namespace) VALUES (?, ?, ?, ?)',
       atruleID,
       context.position++,
-      context.name
+      context.name,
+      context.namespace
     )
 
     for (const n of node.nodes) {
@@ -97,6 +99,7 @@ const run = async (args, importAndWatch) => {
       id INTEGER PRIMARY KEY,
       atruleID INTEGER,
       name TEXT,
+      namespace TEXT,
       pseudo TEXT,
       prop TEXT,
       value TEXT
@@ -112,12 +115,13 @@ const run = async (args, importAndWatch) => {
       id INTEGER PRIMARY KEY,
       atruleID INTEGER,
       position INTEGER,
+      namespace TEXT,
       name TEXT
     );
 
     CREATE INDEX declAtrule ON decl(atruleID);
     CREATE INDEX atruleAtrule ON atrule(parentAtruleID);
-    CREATE UNIQUE INDEX uniqueDecl ON decl(atruleID, name, pseudo, prop);
+    CREATE UNIQUE INDEX uniqueDecl ON decl(atruleID, name, namespace, pseudo, prop);
     CREATE UNIQUE INDEX uniqueAtrule ON atrule(parentAtruleID, name);
   `)
 
@@ -127,10 +131,16 @@ const run = async (args, importAndWatch) => {
 
   const input = await import(cacheBustedInput)
 
-  let inputStyles = input.styles
+  const inputStyles = {}
 
-  if (typeof inputStyles === 'function') {
-    inputStyles = await inputStyles(importAndWatch)
+  for (const namespace of Object.keys(input)) {
+    if (namespace.startsWith('_')) continue
+
+    if (typeof input[namespace] === 'function') {
+      inputStyles[namespace] = await input[namespace](importAndWatch)
+    } else {
+      inputStyles[namespace] = input[namespace]
+    }
   }
 
   await mkdir(path.dirname(path.join(process.cwd(), args.output)), {
@@ -146,12 +156,16 @@ const run = async (args, importAndWatch) => {
 
   const map = {}
 
-  const addToMap = (name, id) => {
-    if (map[name] == null) {
-      map[name] = []
+  const addToMap = (namespace, name, id) => {
+    if (map[namespace] == null) {
+      map[namespace] = {}
     }
 
-    map[name].push(id)
+    if (map[namespace][name] == null) {
+      map[namespace][name] = []
+    }
+
+    map[namespace][name].push(id)
   }
 
   if (input._start) {
@@ -174,38 +188,26 @@ const run = async (args, importAndWatch) => {
 
   const getUniqueID = createGetUniqueID(existingIDs)
 
-  const proxiedStyles = new Proxy(inputStyles, {
-    get(target, prop, receiver) {
-      if ({}.hasOwnProperty.call(target, prop)) {
-        if (typeof target[prop] === 'function') {
-          return target[prop](receiver)
-        }
+  for (const namespace of Object.keys(inputStyles)) {
+    for (const name of Object.keys(inputStyles[namespace])) {
+      const parsed = postcss.parse(inputStyles[namespace][name])
 
-        return target[prop]
+      const context = {namespace, name, position: 0}
+
+      for (const node of parsed.nodes) {
+        await buildData(db, node, context)
       }
-
-      throw Error(`${prop} is undefined`)
-    }
-  })
-
-  for (const name of Object.keys(inputStyles)) {
-    const parsed = postcss.parse(proxiedStyles[name])
-
-    const context = {name, position: 0}
-
-    for (const node of parsed.nodes) {
-      await buildData(db, node, context)
     }
   }
 
   const atrules = await db.all('SELECT * FROM atrule')
 
   const atrulePositionsMultis = await db.all(
-    'SELECT * FROM atrulePosition WHERE name IN (SELECT name FROM atrulePosition GROUP BY name HAVING COUNT(id) > 1) ORDER BY name, position'
+    'SELECT *, namespace || name as n FROM atrulePosition WHERE n IN (SELECT namespace || name as n FROM atrulePosition GROUP BY n HAVING COUNT(id) > 1) ORDER BY n, position'
   )
 
   const atrulePositionsSingles = await db.all(
-    'SELECT * FROM atrulePosition WHERE name IN (SELECT name FROM atrulePosition GROUP BY name HAVING COUNT(id) = 1)'
+    'SELECT *, namespace || name as n FROM atrulePosition WHERE n IN (SELECT namespace || name as n FROM atrulePosition GROUP BY n HAVING COUNT(id) = 1)'
   )
 
   const unorderedAtruleIDs = []
@@ -241,7 +243,7 @@ const run = async (args, importAndWatch) => {
 
   const buildCSS = async (searchID) => {
     const singles = await db.all(
-      'SELECT *, GROUP_CONCAT(name) as names, GROUP_CONCAT(pseudo) as pseudos FROM decl WHERE atruleID = ? GROUP BY atruleID, prop, value HAVING COUNT(id) = 1 ORDER BY names, pseudos',
+      'SELECT *, GROUP_CONCAT(namespace || name) as n, GROUP_CONCAT(pseudo) as pseudos FROM decl WHERE atruleID = ? GROUP BY atruleID, prop, value HAVING COUNT(id) = 1 ORDER BY n, pseudos',
       searchID
     )
 
@@ -251,14 +253,18 @@ const run = async (args, importAndWatch) => {
       let id
 
       for (const single of singles) {
-        if (single.name !== prevSingle?.name) {
+        if (
+          single.name !== prevSingle?.name ||
+          single.namespace !== prevSingle?.namespace
+        ) {
           id = getUniqueID()
 
-          addToMap(single.name, id)
+          addToMap(single.namespace, single.name, id)
         }
 
         if (
           single.name !== prevSingle?.name ||
+          single.namespace !== prevSingle?.namespace ||
           single.pseudo !== prevSingle?.pseudo
         ) {
           if (prevSingle != null) css += `} `
@@ -275,7 +281,7 @@ const run = async (args, importAndWatch) => {
     }
 
     const multis = await db.all(
-      'SELECT *, GROUP_CONCAT(name) as names, GROUP_CONCAT(pseudo) as pseudos FROM decl WHERE atruleID = ? GROUP BY atruleID, prop, value HAVING COUNT(id) > 1 ORDER BY names, pseudos',
+      'SELECT *, GROUP_CONCAT(namespace || name) as n, GROUP_CONCAT(pseudo) as pseudos FROM decl WHERE atruleID = ? GROUP BY atruleID, prop, value HAVING COUNT(id) > 1 ORDER BY n, pseudos',
       searchID
     )
 
@@ -283,12 +289,9 @@ const run = async (args, importAndWatch) => {
 
     if (multis.length) {
       for (const multi of multis) {
-        if (
-          prevMulti?.names !== multi.names ||
-          prevMulti?.pseudos !== multi.pseudos
-        ) {
+        if (prevMulti?.n !== multi.n || prevMulti?.pseudos !== multi.pseudos) {
           const rules = await db.all(
-            'SELECT name, pseudo FROM decl WHERE atruleID = ? AND prop = ? AND value = ? ORDER BY pseudo, name',
+            'SELECT name, namespace, pseudo FROM decl WHERE atruleID = ? AND prop = ? AND value = ? ORDER BY pseudo, name, namespace',
             multi.atruleID,
             multi.prop,
             multi.value
@@ -307,7 +310,7 @@ const run = async (args, importAndWatch) => {
               selectors.push(`.${id}${rule.pseudo} `)
             }
 
-            addToMap(rule.name, id)
+            addToMap(rule.namespace, rule.name, id)
 
             prevPseudo = rule.pseudo
           }
@@ -345,9 +348,9 @@ const run = async (args, importAndWatch) => {
   await Promise.all(
     Object.entries(shorthandLonghands).map(async ([shorthand, longhands]) => {
       const rows = await db.all(
-        `SELECT decl1.name, decl1.prop as shortProp, decl2.prop as longProp
+        `SELECT decl1.namespace || ' ' || decl1.name as n1, decl2.namespace || ' ' || decl2.name as n2, decl1.prop as shortProp, decl2.prop as longProp
           FROM decl as decl1
-            INNER JOIN decl as decl2 ON decl1.name = decl2.name
+            INNER JOIN decl as decl2 ON n1 = n2
           WHERE decl1.pseudo = decl2.pseudo
             AND decl1.prop = ?
             AND decl2.prop IN (${[...longhands].fill('?').join(', ')})
@@ -358,7 +361,7 @@ const run = async (args, importAndWatch) => {
 
       for (const row of rows) {
         console.warn(
-          `${row.shortProp} found with ${row.longProp} for ${row.name}`
+          `${row.shortProp} found with ${row.longProp} for ${row.n1}`
         )
       }
     })
@@ -372,25 +375,30 @@ const run = async (args, importAndWatch) => {
 
   output.css.end(css)
 
-  for (const name of Object.keys(map)) {
-    map[name] = map[name].join(' ')
-  }
+  for (const namespace of Object.keys(map)) {
+    for (const name of Object.keys(map[namespace])) {
+      map[namespace][name] = map[namespace][name].join(' ')
+    }
 
-  const stringifiedMap = JSON.stringify(map, null, 2)
+    const stringifiedMap = JSON.stringify(map[namespace], null, 2)
 
-  if (args['--dev']) {
-    output.js.end(`export const classes = new Proxy(${stringifiedMap}, {
-      get(target, prop) {
-        if ({}.hasOwnProperty.call(target, prop)) {
-          return target[prop]
+    if (args['--dev']) {
+      output.js
+        .write(`export const ${namespace} = new Proxy(${stringifiedMap}, {
+        get(target, prop) {
+          if ({}.hasOwnProperty.call(target, prop)) {
+            return target[prop]
+          }
+
+          throw Error(\`\${prop} is undefined\`)
         }
-
-        throw Error(\`\${prop} is undefined\`)
-      }
-    })`)
-  } else {
-    output.js.end(`export const classes = ${stringifiedMap}`)
+      })\n`)
+    } else {
+      output.js.write(`export const ${namespace} = ${stringifiedMap}\n`)
+    }
   }
+
+  output.js.end('')
 
   dbinstance.close()
 
