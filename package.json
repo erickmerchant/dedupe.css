@@ -23,7 +23,7 @@
   },
   "dependencies": {
     "arg": "^4.1.3",
-    "chokidar": "^3.4.2",
+    "chokidar": "^3.4.3",
     "css-selector-tokenizer": "^0.7.3",
     "csso": "^4.0.3",
     "kleur": "^4.1.3",
