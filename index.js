@@ -22,10 +22,21 @@ const buildData = async (db, node, context = {}) => {
     const value = node.value
 
     await db.run(
-      'INSERT INTO decl (atruleID, name, namespace, pseudo, prop, value) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT (atruleID, name, namespace, pseudo, prop) DO UPDATE set value = ?',
-      context.parentAtruleID ?? 0,
+      'INSERT INTO name (name, namespace) VALUES (?, ?) ON CONFLICT (name, namespace) DO NOTHING',
       context.name,
-      context.namespace,
+      context.namespace
+    )
+
+    const {nameID} = await db.get(
+      'SELECT id as nameID FROM name WHERE name = ? AND namespace = ?',
+      context.name,
+      context.namespace
+    )
+
+    await db.run(
+      'INSERT INTO decl (atruleID, nameID, pseudo, prop, value) VALUES (?, ?, ?, ?, ?) ON CONFLICT (atruleID, nameID, pseudo, prop) DO UPDATE set value = ?',
+      context.parentAtruleID ?? 0,
+      nameID,
       context.pseudo ?? '',
       prop,
       value,
@@ -47,11 +58,22 @@ const buildData = async (db, node, context = {}) => {
     )
 
     await db.run(
-      'INSERT INTO atrulePosition (atruleID, position, name, namespace) VALUES (?, ?, ?, ?)',
-      atruleID,
-      context.position++,
+      'INSERT INTO name (name, namespace) VALUES (?, ?) ON CONFLICT (name, namespace) DO NOTHING',
       context.name,
       context.namespace
+    )
+
+    const {nameID} = await db.get(
+      'SELECT id as nameID FROM name WHERE name = ? AND namespace = ?',
+      context.name,
+      context.namespace
+    )
+
+    await db.run(
+      'INSERT INTO atrulePosition (atruleID, position, nameID) VALUES (?, ?, ?)',
+      atruleID,
+      context.position++,
+      nameID
     )
 
     for (const n of node.nodes) {
@@ -95,11 +117,16 @@ const run = async (args, importAndWatch) => {
   }
 
   await db.exec(`
+    CREATE TABLE name (
+      id INTEGER PRIMARY KEY,
+      name TEXT,
+      namespace TEXT
+    );
+
     CREATE TABLE decl (
       id INTEGER PRIMARY KEY,
       atruleID INTEGER,
-      name TEXT,
-      namespace TEXT,
+      nameID INTEGER,
       pseudo TEXT,
       prop TEXT,
       value TEXT
@@ -115,13 +142,13 @@ const run = async (args, importAndWatch) => {
       id INTEGER PRIMARY KEY,
       atruleID INTEGER,
       position INTEGER,
-      namespace TEXT,
-      name TEXT
+      nameID INTEGER
     );
 
     CREATE INDEX declAtrule ON decl(atruleID);
     CREATE INDEX atruleAtrule ON atrule(parentAtruleID);
-    CREATE UNIQUE INDEX uniqueDecl ON decl(atruleID, name, namespace, pseudo, prop);
+    CREATE UNIQUE INDEX uniqueName ON name(name, namespace);
+    CREATE UNIQUE INDEX uniqueDecl ON decl(atruleID, nameID, pseudo, prop);
     CREATE UNIQUE INDEX uniqueAtrule ON atrule(parentAtruleID, name);
   `)
 
@@ -203,11 +230,11 @@ const run = async (args, importAndWatch) => {
   const atrules = await db.all('SELECT * FROM atrule')
 
   const atrulePositionsMultis = await db.all(
-    'SELECT *, namespace || " " || name as n FROM atrulePosition WHERE n IN (SELECT namespace || " " || name as n FROM atrulePosition GROUP BY n HAVING COUNT(id) > 1) ORDER BY n, position'
+    'SELECT * FROM atrulePosition WHERE nameID IN (SELECT nameID FROM atrulePosition GROUP BY nameID HAVING COUNT(id) > 1) ORDER BY nameID, position'
   )
 
   const atrulePositionsSingles = await db.all(
-    'SELECT *, namespace || " " || name as n FROM atrulePosition WHERE n IN (SELECT namespace || " " || name as n FROM atrulePosition GROUP BY n HAVING COUNT(id) = 1)'
+    'SELECT * FROM atrulePosition WHERE nameID IN (SELECT nameID FROM atrulePosition GROUP BY nameID HAVING COUNT(id) = 1)'
   )
 
   const unorderedAtruleIDs = []
@@ -245,11 +272,11 @@ const run = async (args, importAndWatch) => {
   const buildCSS = async (searchID) => {
     const singles = args['--no-optimize']
       ? await db.all(
-          'SELECT * FROM decl WHERE atruleID = ? ORDER BY namespace, name, pseudo',
+          'SELECT * FROM decl LEFT JOIN name ON decl.nameID = name.id WHERE atruleID = ? ORDER BY nameID, pseudo',
           searchID
         )
       : await db.all(
-          'SELECT *, GROUP_CONCAT(namespace || " " || name) as n, GROUP_CONCAT(pseudo) as pseudos FROM decl WHERE atruleID = ? GROUP BY atruleID, prop, value HAVING COUNT(id) = 1 ORDER BY n, pseudos',
+          'SELECT *, GROUP_CONCAT(nameID, " ") as nameIDs, GROUP_CONCAT(pseudo) as pseudos FROM decl LEFT JOIN name ON decl.nameID = name.id WHERE atruleID = ? GROUP BY atruleID, prop, value HAVING COUNT(decl.id) = 1 ORDER BY nameIDs, pseudos',
           searchID
         )
 
@@ -259,24 +286,20 @@ const run = async (args, importAndWatch) => {
       let id
 
       for (const single of singles) {
-        if (
-          single.name !== prevSingle?.name ||
-          single.namespace !== prevSingle?.namespace
-        ) {
-          if (!nameMap[single.n ?? `${single.namespace} ${single.name}`]) {
+        if (single.nameID !== prevSingle?.nameID) {
+          if (!nameMap[single.nameIDs ?? single.nameID]) {
             id = getUniqueID()
 
-            nameMap[single.n ?? `${single.namespace} ${single.name}`] = id
+            nameMap[single.nameIDs ?? single.nameID] = id
 
             addToMap(single.namespace, single.name, id)
           } else {
-            id = nameMap[single.n ?? `${single.namespace} ${single.name}`]
+            id = nameMap[single.nameIDs ?? single.nameID]
           }
         }
 
         if (
-          single.name !== prevSingle?.name ||
-          single.namespace !== prevSingle?.namespace ||
+          single.nameID !== prevSingle?.nameID ||
           single.pseudo !== prevSingle?.pseudo
         ) {
           if (prevSingle != null) css += `} `
@@ -295,7 +318,7 @@ const run = async (args, importAndWatch) => {
     const multis = args['--no-optimize']
       ? []
       : await db.all(
-          'SELECT *, GROUP_CONCAT(namespace || " " || name) as n, GROUP_CONCAT(pseudo) as pseudos FROM decl WHERE atruleID = ? GROUP BY atruleID, prop, value HAVING COUNT(id) > 1 ORDER BY n, pseudos',
+          'SELECT *, GROUP_CONCAT(nameID, " ") as nameIDs, GROUP_CONCAT(pseudo) as pseudos FROM decl WHERE atruleID = ? GROUP BY atruleID, prop, value HAVING COUNT(id) > 1 ORDER BY nameIDs, pseudos',
           searchID
         )
 
@@ -303,9 +326,12 @@ const run = async (args, importAndWatch) => {
 
     if (multis.length) {
       for (const multi of multis) {
-        if (prevMulti?.n !== multi.n || prevMulti?.pseudos !== multi.pseudos) {
+        if (
+          prevMulti?.nameIDs !== multi.nameIDs ||
+          prevMulti?.pseudos !== multi.pseudos
+        ) {
           const rules = await db.all(
-            'SELECT name, namespace, pseudo FROM decl WHERE atruleID = ? AND prop = ? AND value = ? ORDER BY pseudo, name, namespace',
+            'SELECT namespace, name, pseudo FROM decl LEFT JOIN name ON decl.nameID = name.id WHERE atruleID = ? AND prop = ? AND value = ? ORDER BY pseudo, nameID',
             multi.atruleID,
             multi.prop,
             multi.value
@@ -362,9 +388,9 @@ const run = async (args, importAndWatch) => {
   await Promise.all(
     Object.entries(shorthandLonghands).map(async ([shorthand, longhands]) => {
       const rows = await db.all(
-        `SELECT decl1.namespace || " " || decl1.name as n1, decl2.namespace || " " || decl2.name as n2, decl1.prop as shortProp, decl2.prop as longProp
+        `SELECT decl1.nameID as nameIDs, decl2.nameID as nameIDs2, decl1.prop as shortProp, decl2.prop as longProp
           FROM decl as decl1
-            INNER JOIN decl as decl2 ON n1 = n2
+            INNER JOIN decl as decl2 ON nameIDs = nameIDs2
           WHERE decl1.pseudo = decl2.pseudo
             AND decl1.prop = ?
             AND decl2.prop IN (${[...longhands].fill('?').join(', ')})
@@ -375,7 +401,7 @@ const run = async (args, importAndWatch) => {
 
       for (const row of rows) {
         console.warn(
-          `${row.shortProp} found with ${row.longProp} for ${row.n1}`
+          `${row.shortProp} found with ${row.longProp} for ${row.nameIDs}`
         )
       }
     })
