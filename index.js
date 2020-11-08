@@ -4,7 +4,6 @@ import fs from 'fs'
 import stream from 'stream'
 import {promisify} from 'util'
 import postcss from 'postcss'
-import csso from 'csso'
 import selectorTokenizer from 'css-selector-tokenizer'
 import chokidar from 'chokidar'
 import sqlite3 from 'sqlite3'
@@ -408,10 +407,6 @@ const run = async (args, importAndWatch) => {
   )
 
   css += input._end ?? ''
-
-  if (!args['--dev']) {
-    css = csso.minify(css, {restructure: false}).css
-  }
 
   output.css.end(css)
 
