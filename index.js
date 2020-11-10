@@ -3,7 +3,7 @@ import path from 'path'
 import fs from 'fs'
 import stream from 'stream'
 import {promisify} from 'util'
-import postcss from 'postcss'
+import postcss, {list} from 'postcss'
 import selectorTokenizer from 'css-selector-tokenizer'
 import chokidar from 'chokidar'
 import sqlite3 from 'sqlite3'
@@ -18,7 +18,7 @@ const createWriteStream = fs.createWriteStream
 const buildData = async (db, node, context = {}) => {
   if (node.type === 'decl') {
     const prop = node.prop
-    const value = node.value
+    const value = list.comma(node.value).join(',')
 
     await db.run(
       'INSERT INTO name (name, namespace) VALUES (?, ?) ON CONFLICT (name, namespace) DO NOTHING',
@@ -105,6 +105,26 @@ const buildData = async (db, node, context = {}) => {
   }
 }
 
+const minify = (css) => {
+  css.walk((node) => {
+    for (const prop of ['before', 'between', 'after']) {
+      if (node.raws[prop]) {
+        node.raws[prop] = node.raws[prop].trim()
+      }
+
+      node.raws.semicolon = false
+
+      if (node.value) {
+        node.value = list.comma(node.value).join(',')
+      }
+
+      if (node.selectors) {
+        node.selector = node.selectors.join(',')
+      }
+    }
+  })
+}
+
 const run = async (args, importAndWatch) => {
   const dbinstance = new sqlite3.Database(':memory:')
 
@@ -178,7 +198,7 @@ const run = async (args, importAndWatch) => {
     js: createWriteStream(path.join(process.cwd(), `${args.output}.js`))
   }
 
-  let css = ''
+  const css = postcss.parse('')
 
   const map = {}
 
@@ -195,21 +215,29 @@ const run = async (args, importAndWatch) => {
   }
 
   if (input._start) {
-    css += input._start
+    const start = postcss.parse(input._start)
 
-    postcss.parse(input._start).walkRules((rule) => {
+    start.walkRules((rule) => {
       const parsed = selectorTokenizer.parse(rule.selector)
 
       existingIDs.push(...getClassNames(parsed))
     })
+
+    minify(start)
+
+    css.append(start)
   }
 
   if (input._end) {
-    postcss.parse(input._end).walkRules((rule) => {
+    input._end = postcss.parse(input._end)
+
+    input._end.walkRules((rule) => {
       const parsed = selectorTokenizer.parse(rule.selector)
 
       existingIDs.push(...getClassNames(parsed))
     })
+
+    minify(input._end)
   }
 
   const getUniqueID = createGetUniqueID(existingIDs)
@@ -269,6 +297,8 @@ const run = async (args, importAndWatch) => {
   )
 
   const buildCSS = async (searchID) => {
+    let cssStr = ''
+
     const singles = args['--no-optimize']
       ? await db.all(
           'SELECT * FROM decl LEFT JOIN name ON decl.nameID = name.id WHERE atruleID = ? ORDER BY nameID, pseudo',
@@ -297,21 +327,25 @@ const run = async (args, importAndWatch) => {
           }
         }
 
+        let semi = true
+
         if (
           single.nameID !== prevSingle?.nameID ||
           single.pseudo !== prevSingle?.pseudo
         ) {
-          if (prevSingle != null) css += `} `
+          if (prevSingle != null) cssStr += `}`
 
-          css += `.${id}${single.pseudo} { `
+          cssStr += `.${id}${single.pseudo}{`
+
+          semi = false
         }
 
-        css += `${single.prop}: ${single.value}; `
+        cssStr += `${semi ? ';' : ''}${single.prop}:${single.value}`
 
         prevSingle = single
       }
 
-      css += `} `
+      cssStr += `}`
     }
 
     const multis = args['--no-optimize']
@@ -325,6 +359,8 @@ const run = async (args, importAndWatch) => {
 
     if (multis.length) {
       for (const multi of multis) {
+        let semi = true
+
         if (
           prevMulti?.nameIDs !== multi.nameIDs ||
           prevMulti?.pseudos !== multi.pseudos
@@ -336,7 +372,7 @@ const run = async (args, importAndWatch) => {
             multi.value
           )
 
-          if (prevMulti != null) css += `} `
+          if (prevMulti != null) cssStr += `}`
 
           let prevPseudo
           let id
@@ -346,7 +382,7 @@ const run = async (args, importAndWatch) => {
             if (prevPseudo !== rule.pseudo) {
               id = getUniqueID()
 
-              selectors.push(`.${id}${rule.pseudo} `)
+              selectors.push(`.${id}${rule.pseudo}`)
             }
 
             addToMap(rule.namespace, rule.name, id)
@@ -354,35 +390,39 @@ const run = async (args, importAndWatch) => {
             prevPseudo = rule.pseudo
           }
 
-          css += `${selectors.join(', ')} { `
+          cssStr += `${selectors.join(',')}{`
+
+          semi = false
         }
 
-        css += `${multi.prop}: ${multi.value}; `
+        cssStr += `${semi ? ';' : ''}${multi.prop}:${multi.value}`
 
         prevMulti = multi
       }
 
-      css += `} `
+      cssStr += `}`
     }
 
     for (let i = 0; i < atrules.length; i++) {
       const {parentAtruleID, name, id} = atrules[i]
 
       if (parentAtruleID === searchID) {
-        css += `${name} { `
+        cssStr += `${name}{`
 
-        await buildCSS(id)
+        cssStr += await buildCSS(id)
 
         atrules.splice(i, 1)
 
         i--
 
-        css += '} '
+        cssStr += '}'
       }
     }
+
+    return cssStr
   }
 
-  await buildCSS(0)
+  css.append(await buildCSS(0))
 
   await Promise.all(
     Object.entries(shorthandLonghands).map(async ([shorthand, longhands]) => {
@@ -406,9 +446,9 @@ const run = async (args, importAndWatch) => {
     })
   )
 
-  css += input._end ?? ''
+  css.append(input._end ?? '')
 
-  output.css.end(css)
+  output.css.end(css.toResult().css)
 
   for (const namespace of Object.keys(map)) {
     for (const name of Object.keys(map[namespace])) {
