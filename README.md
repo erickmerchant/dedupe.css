@@ -78,7 +78,7 @@ p {
 
 ```javascript
 // output.js
-export const classes = {
+export const styles = {
   loud: 'a c',
   button: 'a b'
 }
@@ -86,11 +86,11 @@ export const classes = {
 
 ```javascript
 // app.js
-import {classes} from './output.js'
+import {styles} from './output.js'
 
-classes.loud // 'a c'
+styles.loud // 'a c'
 
-classes.button // 'a b'
+styles.button // 'a b'
 ```
 
 ## Usage
@@ -98,13 +98,11 @@ classes.button // 'a b'
 build once
 
 ```
-npx @erickmerchant/css input.js -o output
+npx @erickmerchant/css input.js output
 ```
 
 watch for changes
 
 ```
-npx @erickmerchant/css -w input.js -o output
+npx @erickmerchant/css -w input.js output
 ```
-
-> ⚠️ As your CSS grows this will likely not scale at the moment, but since there is no browser runtime except for the map of classes this may not be a big deal to you.
