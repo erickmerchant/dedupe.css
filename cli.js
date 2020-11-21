@@ -48,7 +48,9 @@ const program = async () => {
 
     const [input, output] = args._
 
-    Object.assign(args, {input, output})
+    args.input = input
+
+    args.output = output
 
     await action(args)
   } catch (error) {
