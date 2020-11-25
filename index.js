@@ -125,7 +125,7 @@ const minify = (css) => {
   })
 }
 
-const run = async (args, importAndWatch) => {
+const run = async (args, settings) => {
   const dbinstance = new sqlite3.Database(':memory:')
 
   const db = {
@@ -183,19 +183,25 @@ const run = async (args, importAndWatch) => {
     if (namespace.startsWith('_')) continue
 
     if (typeof input[namespace] === 'function') {
-      inputStyles[namespace] = await input[namespace](importAndWatch)
+      inputStyles[namespace] = await input[namespace](settings)
     } else {
       inputStyles[namespace] = input[namespace]
     }
   }
 
-  await mkdir(path.dirname(path.join(process.cwd(), args.output)), {
+  await mkdir(path.join(process.cwd(), args.output), {
     recursive: true
   })
 
+  const outpath = path.join(
+    process.cwd(),
+    args.output,
+    path.basename(args.input, path.extname(args.input))
+  )
+
   const output = {
-    css: createWriteStream(path.join(process.cwd(), `${args.output}.css`)),
-    js: createWriteStream(path.join(process.cwd(), `${args.output}.js`))
+    css: createWriteStream(`${outpath}.css`),
+    js: createWriteStream(`${outpath}.js`)
   }
 
   const css = postcss.parse('')
@@ -480,7 +486,12 @@ const run = async (args, importAndWatch) => {
   return Promise.all(
     ['css', 'js'].map((type) =>
       finished(output[type]).then(() => {
-        process.stdout.write(`${gray('[css]')} saved ${args.output}.${type}\n`)
+        process.stdout.write(
+          `${gray('[css]')} saved ${path.relative(
+            process.cwd(),
+            outpath
+          )}.${type}\n`
+        )
       })
     )
   )
@@ -489,35 +500,29 @@ const run = async (args, importAndWatch) => {
 export default async (args) => {
   args.input = path.join(process.cwd(), args.input)
 
-  let importAndWatch = (file) => {
-    return import(path.join(path.dirname(args.input), file))
+  let settings = {}
+
+  if (args['--settings']) {
+    args['--settings'] = path.join(process.cwd(), args['--settings'])
+
+    settings = await import(args['--settings'])
   }
 
   if (!args['--watch']) {
-    return run(args, importAndWatch)
+    return run(args, settings)
   }
 
   const watcher = chokidar.watch(args.input, {ignoreInitial: true})
 
-  const imported = []
+  watcher.add(args['--settings'])
 
-  importAndWatch = (file) => {
-    file = path.join(path.dirname(args.input), file)
+  run(args, settings)
 
-    imported.push(file)
+  watcher.on('change', async () => {
+    const settings = args['--settings']
+      ? await import(`${args['--settings']}?${Date.now()}`)
+      : {}
 
-    watcher.add(file)
-
-    return import(`${file}?${Date.now()}`)
-  }
-
-  run(args, importAndWatch)
-
-  watcher.on('change', () => {
-    watcher.unwatch(imported)
-
-    imported.splice(0, imported.length)
-
-    run(args, importAndWatch)
+    run(args, settings)
   })
 }

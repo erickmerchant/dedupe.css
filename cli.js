@@ -12,9 +12,21 @@ ${bold('Usage:')}
 
 ${bold('Options:')}
 
- -w, --watch  watch for changes
- -d, --dev    don't minify. throw on missing
- -h, --help   display this message
+ ${bold('-w, --watch')}
+
+  watch for changes
+
+ ${bold('-d, --dev')}
+
+  don't minify. throw on missing
+
+ ${bold('-h, --help')}
+
+  display this message
+
+ ${bold('-s <file>, --settings <file>')}
+
+  a file to import
 
 `
 
@@ -24,9 +36,11 @@ const program = async () => {
       '--watch': Boolean,
       '--dev': Boolean,
       '--help': Boolean,
+      '--settings': String,
       '-w': '--watch',
       '-d': '--dev',
       '-h': '--help',
+      '-s': '--settings',
 
       // undocumented
       '--no-optimize': Boolean
