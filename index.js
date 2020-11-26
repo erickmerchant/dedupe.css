@@ -311,7 +311,7 @@ const run = async (args, settings) => {
           searchID
         )
       : await db.all(
-          'SELECT *, GROUP_CONCAT(nameID, " ") as nameIDs, GROUP_CONCAT(pseudo) as pseudos FROM decl LEFT JOIN name ON decl.nameID = name.id WHERE atruleID = ? GROUP BY atruleID, prop, value HAVING COUNT(decl.id) = 1 ORDER BY nameIDs, pseudos',
+          'SELECT *, GROUP_CONCAT(DISTINCT nameID) as nameIDs, GROUP_CONCAT(DISTINCT pseudo) as pseudos FROM decl LEFT JOIN name ON decl.nameID = name.id WHERE atruleID = ? GROUP BY atruleID, prop, value HAVING COUNT(decl.id) = 1 ORDER BY nameIDs, pseudos',
           searchID
         )
 
@@ -357,7 +357,7 @@ const run = async (args, settings) => {
     const multis = args['--no-optimize']
       ? []
       : await db.all(
-          'SELECT *, GROUP_CONCAT(nameID, " ") as nameIDs, GROUP_CONCAT(pseudo) as pseudos FROM decl WHERE atruleID = ? GROUP BY atruleID, prop, value HAVING COUNT(id) > 1 ORDER BY nameIDs, pseudos',
+          'SELECT *, GROUP_CONCAT(DISTINCT nameID) as nameIDs, GROUP_CONCAT(DISTINCT pseudo) as pseudos FROM decl WHERE atruleID = ? GROUP BY atruleID, prop, value HAVING COUNT(id) > 1 ORDER BY nameIDs, pseudos',
           searchID
         )
 
