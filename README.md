@@ -9,7 +9,7 @@ This project aims to combine those two ideals. The CLI takes a single ES module 
 ## Example
 
 ```javascript
-// input.js
+// styles.js
 const desktop = '@media (min-width: 100px)'
 
 // some styles for reuse. font-weight normal is removed because it's overridden
@@ -18,7 +18,7 @@ const emphasis = `
   font-weight: bold;
 `
 
-// these styles are tacked onto the beginning of output.css unmodified
+// these styles are tacked onto the beginning of output/styles.css unmodified
 export const _start = `
   p {
     margin-top: var(--spacing)
@@ -51,7 +51,7 @@ export const styles = {
 ```
 
 ```css
-/* output.css */
+/* output/styles.css */
 p {
   margin-top: var(--spacing);
 }
@@ -77,7 +77,7 @@ p {
 ```
 
 ```javascript
-// output.js
+// output/styles.js
 export const styles = {
   loud: 'a c',
   button: 'a b'
@@ -86,7 +86,7 @@ export const styles = {
 
 ```javascript
 // app.js
-import {styles} from './output.js'
+import {styles} from './output/styles.js'
 
 styles.loud // 'a c'
 
@@ -98,11 +98,11 @@ styles.button // 'a b'
 build once
 
 ```
-npx @erickmerchant/css input.js output
+npx @erickmerchant/css styles.js output
 ```
 
 watch for changes
 
 ```
-npx @erickmerchant/css -w input.js output
+npx @erickmerchant/css -w styles.js output
 ```
