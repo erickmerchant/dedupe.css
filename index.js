@@ -214,10 +214,10 @@ const run = async (args, settings) => {
     }
 
     if (map[namespace][name] == null) {
-      map[namespace][name] = []
+      map[namespace][name] = new Set()
     }
 
-    map[namespace][name].push(id)
+    map[namespace][name].add(id)
   }
 
   if (input._start) {
@@ -260,14 +260,14 @@ const run = async (args, settings) => {
     }
   }
 
-  const atrules = await db.all('SELECT * FROM atrule')
+  const atrules = await db.all('SELECT parentAtruleID, name, id FROM atrule')
 
   const atrulePositionsMultis = await db.all(
-    'SELECT * FROM atrulePosition WHERE nameID IN (SELECT nameID FROM atrulePosition GROUP BY nameID HAVING COUNT(id) > 1) ORDER BY nameID, position'
+    'SELECT atruleID FROM atrulePosition WHERE nameID IN (SELECT nameID FROM atrulePosition GROUP BY nameID HAVING COUNT(id) > 1) ORDER BY nameID, position'
   )
 
   const atrulePositionsSingles = await db.all(
-    'SELECT * FROM atrulePosition WHERE nameID IN (SELECT nameID FROM atrulePosition GROUP BY nameID HAVING COUNT(id) = 1)'
+    'SELECT atruleID FROM atrulePosition WHERE nameID IN (SELECT nameID FROM atrulePosition GROUP BY nameID HAVING COUNT(id) = 1)'
   )
 
   const unorderedAtruleIDs = []
@@ -307,11 +307,11 @@ const run = async (args, settings) => {
 
     const singles = args['--no-optimize']
       ? await db.all(
-          'SELECT * FROM decl LEFT JOIN name ON decl.nameID = name.id WHERE atruleID = ? ORDER BY nameID, pseudo',
+          'SELECT name, nameID, namespace, prop, pseudo, value FROM decl LEFT JOIN name ON decl.nameID = name.id WHERE atruleID = ? ORDER BY nameID, pseudo',
           searchID
         )
       : await db.all(
-          'SELECT *, GROUP_CONCAT(DISTINCT nameID) as nameIDs, GROUP_CONCAT(DISTINCT pseudo) as pseudos FROM decl LEFT JOIN name ON decl.nameID = name.id WHERE atruleID = ? GROUP BY atruleID, prop, value HAVING COUNT(decl.id) = 1 ORDER BY nameIDs, pseudos',
+          'SELECT name, nameID, namespace, prop, pseudo, value, GROUP_CONCAT(DISTINCT nameID) as nameIDs, GROUP_CONCAT(DISTINCT pseudo) as pseudos FROM decl LEFT JOIN name ON decl.nameID = name.id WHERE atruleID = ? GROUP BY atruleID, prop, value HAVING COUNT(decl.id) = 1 ORDER BY nameIDs, pseudos',
           searchID
         )
 
@@ -357,7 +357,7 @@ const run = async (args, settings) => {
     const multis = args['--no-optimize']
       ? []
       : await db.all(
-          'SELECT *, GROUP_CONCAT(DISTINCT nameID) as nameIDs, GROUP_CONCAT(DISTINCT pseudo) as pseudos FROM decl WHERE atruleID = ? GROUP BY atruleID, prop, value HAVING COUNT(id) > 1 ORDER BY nameIDs, pseudos',
+          'SELECT atruleID, prop, value, GROUP_CONCAT(DISTINCT nameID) as nameIDs, GROUP_CONCAT(DISTINCT pseudo) as pseudos FROM decl WHERE atruleID = ? GROUP BY atruleID, prop, value HAVING COUNT(id) > 1 ORDER BY nameIDs, pseudos',
           searchID
         )
 
@@ -372,7 +372,7 @@ const run = async (args, settings) => {
           prevMulti?.pseudos !== multi.pseudos
         ) {
           const rules = await db.all(
-            'SELECT namespace, name, pseudo FROM decl LEFT JOIN name ON decl.nameID = name.id WHERE atruleID = ? AND prop = ? AND value = ? ORDER BY pseudo, nameID',
+            'SELECT namespace, name, pseudo, nameID FROM decl LEFT JOIN name ON decl.nameID = name.id WHERE atruleID = ? AND prop = ? AND value = ? ORDER BY pseudo, nameID',
             multi.atruleID,
             multi.prop,
             multi.value
@@ -458,7 +458,7 @@ const run = async (args, settings) => {
 
   for (const namespace of Object.keys(map)) {
     for (const name of Object.keys(map[namespace])) {
-      map[namespace][name] = map[namespace][name].join(' ')
+      map[namespace][name] = Array.from(map[namespace][name]).join(' ')
     }
 
     const stringifiedMap = JSON.stringify(map[namespace], null, 2)
