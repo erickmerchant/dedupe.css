@@ -1,6 +1,6 @@
 {
   "name": "@erickmerchant/css",
-  "version": "25.1.0",
+  "version": "25.1.1",
   "description": "A CSS from JS tool.",
   "homepage": "https://github.com/erickmerchant/css#readme",
   "bugs": {
@@ -15,7 +15,7 @@
   "type": "module",
   "main": "index.js",
   "bin": {
-    "css": "./cli.js"
+    "css": "cli.js"
   },
   "scripts": {
     "lint": "eslint . --ignore-path .gitignore",
