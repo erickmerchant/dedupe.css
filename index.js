@@ -5,7 +5,6 @@ import stream from 'stream'
 import {promisify} from 'util'
 import postcss, {list} from 'postcss'
 import selectorTokenizer from 'css-selector-tokenizer'
-import chokidar from 'chokidar'
 import sqlite3 from 'sqlite3'
 import shorthandLonghands from './lib/shorthand-longhands.js'
 import getClassNames from './lib/get-selectors.js'
@@ -125,7 +124,7 @@ const minify = (css) => {
   })
 }
 
-const run = async (args, settings) => {
+export default async (args, settings) => {
   const dbinstance = new sqlite3.Database(':memory:')
 
   const db = {
@@ -495,34 +494,4 @@ const run = async (args, settings) => {
       })
     )
   )
-}
-
-export default async (args) => {
-  args.input = path.join(process.cwd(), args.input)
-
-  let settings = {}
-
-  if (args['--settings']) {
-    args['--settings'] = path.join(process.cwd(), args['--settings'])
-
-    settings = await import(args['--settings'])
-  }
-
-  if (!args['--watch']) {
-    return run(args, settings)
-  }
-
-  const watcher = chokidar.watch(args.input, {ignoreInitial: true})
-
-  watcher.add(args['--settings'])
-
-  run(args, settings)
-
-  watcher.on('change', async () => {
-    const settings = args['--settings']
-      ? await import(`${args['--settings']}?${Date.now()}`)
-      : {}
-
-    run(args, settings)
-  })
 }

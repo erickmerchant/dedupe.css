@@ -2,6 +2,10 @@
 import arg from 'arg'
 import {magenta, bold} from 'kleur/colors'
 import action from './index.js'
+import path from 'path'
+import {fileURLToPath} from 'url'
+import childProcess from 'child_process'
+import chokidar from 'chokidar'
 
 const usage = `
 @erickmerchant/css
@@ -12,9 +16,9 @@ ${bold('Usage:')}
 
 ${bold('Options:')}
 
- ${bold('-w, --watch')}
+ ${bold('-w <directory>, --watch <directory>')}
 
-  watch for changes
+  watch for changes in <directory>
 
  ${bold('-d, --dev')}
 
@@ -24,23 +28,17 @@ ${bold('Options:')}
 
   display this message
 
- ${bold('-s <file>, --settings <file>')}
-
-  a file to import
-
 `
 
 const program = async () => {
   try {
     const args = arg({
-      '--watch': Boolean,
+      '--watch': String,
       '--dev': Boolean,
       '--help': Boolean,
-      '--settings': String,
       '-w': '--watch',
       '-d': '--dev',
       '-h': '--help',
-      '-s': '--settings',
 
       // undocumented
       '--no-optimize': Boolean
@@ -66,7 +64,38 @@ const program = async () => {
 
     args.output = output
 
-    await action(args)
+    if (!args['--watch']) {
+      args.input = path.join(process.cwd(), args.input)
+
+      await action(args)
+    } else {
+      const watcher = chokidar.watch(args['--watch'], {ignoreInitial: true})
+
+      const run = async () => {
+        const rargs = [
+          path.join(path.dirname(fileURLToPath(import.meta.url)), './cli.js'),
+          args.input,
+          args.output
+        ]
+
+        if (args['--dev']) {
+          rargs.push('--dev')
+        }
+
+        const spawned = childProcess.spawn(process.execPath, rargs, {
+          stdio: 'inherit',
+          detached: true
+        })
+
+        spawned.on('error', (err) => {
+          console.error(err)
+        })
+      }
+
+      watcher.on('all', run)
+
+      run()
+    }
   } catch (error) {
     process.stderr.write(`${error}\n`)
 
