@@ -38,10 +38,7 @@ const program = async () => {
       '--help': Boolean,
       '-w': '--watch',
       '-d': '--dev',
-      '-h': '--help',
-
-      // undocumented
-      '--no-optimize': Boolean
+      '-h': '--help'
     })
 
     if (args['--help']) {

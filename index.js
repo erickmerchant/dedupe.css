@@ -17,7 +17,7 @@ const createWriteStream = fs.createWriteStream
 const buildData = async (db, node, context = {}) => {
   if (node.type === 'decl') {
     const prop = node.prop
-    const value = list.comma(node.value).join(',')
+    const value = minifyValue(node.value)
 
     await db.run(
       'INSERT INTO name (name, namespace) VALUES (?, ?) ON CONFLICT (name, namespace) DO NOTHING',
@@ -104,6 +104,17 @@ const buildData = async (db, node, context = {}) => {
   }
 }
 
+const minifyValue = (value) =>
+  list
+    .comma(value)
+    .map((v) =>
+      v
+        .split('\n')
+        .map((s) => s.trim())
+        .join(' ')
+    )
+    .join(',')
+
 const minify = (css) => {
   css.walk((node) => {
     for (const prop of ['before', 'between', 'after']) {
@@ -114,7 +125,7 @@ const minify = (css) => {
       node.raws.semicolon = false
 
       if (node.value) {
-        node.value = list.comma(node.value).join(',')
+        node.value = minifyValue(node.value)
       }
 
       if (node.selectors) {
@@ -304,15 +315,10 @@ export default async (args, settings) => {
   const buildCSS = async (searchID) => {
     let cssStr = ''
 
-    const singles = args['--no-optimize']
-      ? await db.all(
-          'SELECT name, nameID, namespace, prop, pseudo, value FROM decl LEFT JOIN name ON decl.nameID = name.id WHERE atruleID = ? ORDER BY nameID, pseudo',
-          searchID
-        )
-      : await db.all(
-          'SELECT name, nameID, namespace, prop, pseudo, value, GROUP_CONCAT(DISTINCT nameID) as nameIDs, GROUP_CONCAT(DISTINCT pseudo) as pseudos FROM decl LEFT JOIN name ON decl.nameID = name.id WHERE atruleID = ? GROUP BY atruleID, prop, value HAVING COUNT(decl.id) = 1 ORDER BY nameIDs, pseudos',
-          searchID
-        )
+    const singles = await db.all(
+      'SELECT name, nameID, namespace, prop, pseudo, value, GROUP_CONCAT(DISTINCT nameID) as nameIDs, GROUP_CONCAT(DISTINCT pseudo) as pseudos FROM decl LEFT JOIN name ON decl.nameID = name.id WHERE atruleID = ? GROUP BY atruleID, prop, value HAVING COUNT(decl.id) = 1 ORDER BY nameIDs, pseudos',
+      searchID
+    )
 
     let prevSingle
 
@@ -353,12 +359,10 @@ export default async (args, settings) => {
       cssStr += `}`
     }
 
-    const multis = args['--no-optimize']
-      ? []
-      : await db.all(
-          'SELECT atruleID, prop, value, GROUP_CONCAT(DISTINCT nameID) as nameIDs, GROUP_CONCAT(DISTINCT pseudo) as pseudos FROM decl WHERE atruleID = ? GROUP BY atruleID, prop, value HAVING COUNT(id) > 1 ORDER BY nameIDs, pseudos',
-          searchID
-        )
+    const multis = await db.all(
+      'SELECT atruleID, prop, value, GROUP_CONCAT(DISTINCT nameID) as nameIDs, GROUP_CONCAT(DISTINCT pseudo) as pseudos FROM decl WHERE atruleID = ? GROUP BY atruleID, prop, value HAVING COUNT(id) > 1 ORDER BY nameIDs, pseudos',
+      searchID
+    )
 
     let prevMulti
 
@@ -432,9 +436,10 @@ export default async (args, settings) => {
   await Promise.all(
     Object.entries(shorthandLonghands).map(async ([shorthand, longhands]) => {
       const rows = await db.all(
-        `SELECT decl1.nameID as nameIDs, decl2.nameID as nameIDs2, decl1.prop as shortProp, decl2.prop as longProp
-          FROM decl as decl1
-            INNER JOIN decl as decl2 ON nameIDs = nameIDs2
+        `SELECT name.name, decl1.prop as shortProp, decl2.prop as longProp
+          FROM name
+            INNER JOIN decl as decl1 ON decl1.nameID = name.id
+            INNER JOIN decl as decl2 ON decl1.nameID = decl2.nameID
           WHERE decl1.pseudo = decl2.pseudo
             AND decl1.prop = ?
             AND decl2.prop IN (${[...longhands].fill('?').join(', ')})
@@ -445,7 +450,7 @@ export default async (args, settings) => {
 
       for (const row of rows) {
         console.warn(
-          `${row.shortProp} found with ${row.longProp} for ${row.nameIDs}`
+          `${row.shortProp} found with ${row.longProp} for ${row.name}`
         )
       }
     })
