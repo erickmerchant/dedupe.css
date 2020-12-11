@@ -135,7 +135,7 @@ const minify = (css) => {
   })
 }
 
-export default async (args, settings) => {
+export default async (args) => {
   const dbinstance = new sqlite3.Database(':memory:')
 
   const db = {
@@ -192,11 +192,7 @@ export default async (args, settings) => {
   for (const namespace of Object.keys(input)) {
     if (namespace.startsWith('_')) continue
 
-    if (typeof input[namespace] === 'function') {
-      inputStyles[namespace] = await input[namespace](settings)
-    } else {
-      inputStyles[namespace] = input[namespace]
-    }
+    inputStyles[namespace] = input[namespace]
   }
 
   await mkdir(path.join(process.cwd(), args.output), {
