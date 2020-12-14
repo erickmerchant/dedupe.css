@@ -276,22 +276,18 @@ export default async (args) => {
     'SELECT atruleID FROM atrulePosition WHERE nameID IN (SELECT nameID FROM atrulePosition GROUP BY nameID HAVING COUNT(id) = 1)'
   )
 
-  const unorderedAtruleIDs = []
+  const unorderedAtruleIDs = new Set()
   const orderedAtruleIDs = []
   const nameMap = {}
 
   for (const {atruleID} of atrulePositionsSingles) {
-    unorderedAtruleIDs.push(atruleID)
+    unorderedAtruleIDs.add(atruleID)
   }
 
   let index = 0
 
   for (const {atruleID} of atrulePositionsMultis) {
-    const unorderedIndex = unorderedAtruleIDs.indexOf(atruleID)
-
-    if (~unorderedIndex) {
-      unorderedAtruleIDs.splice(unorderedIndex, 1)
-    }
+    unorderedAtruleIDs.delete(atruleID)
 
     const orderedIndex = orderedAtruleIDs.indexOf(atruleID)
 
@@ -302,7 +298,9 @@ export default async (args) => {
     }
   }
 
-  const sortedAtruleIDs = unorderedAtruleIDs.concat(orderedAtruleIDs)
+  const sortedAtruleIDs = Array.from(unorderedAtruleIDs).concat(
+    orderedAtruleIDs
+  )
 
   atrules.sort(
     (a, b) => sortedAtruleIDs.indexOf(a.id) - sortedAtruleIDs.indexOf(b.id)
