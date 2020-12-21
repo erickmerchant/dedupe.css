@@ -44,8 +44,7 @@
   "eslintConfig": {
     "extends": "@erickmerchant/eslint-config",
     "rules": {
-      "no-await-in-loop": "off",
-      "require-atomic-updates": "off"
+      "no-await-in-loop": "off"
     }
   },
   "prettier": "@erickmerchant/prettier-config"
