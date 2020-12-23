@@ -61,19 +61,6 @@ const buildData = async (db, node, context = {}) => {
       context.namespace
     )
 
-    const {nameID} = await db.get(
-      'SELECT id as nameID FROM name WHERE name = ? AND namespace = ?',
-      context.name,
-      context.namespace
-    )
-
-    await db.run(
-      'INSERT INTO atrulePosition (atruleID, position, nameID) VALUES (?, ?, ?)',
-      atruleID,
-      context.position++,
-      nameID
-    )
-
     for (const n of node.nodes) {
       await buildData(db, n, {
         ...context,
@@ -165,13 +152,6 @@ export default async (args) => {
       id INTEGER PRIMARY KEY,
       parentAtruleID INTEGER,
       name TEXT
-    );
-
-    CREATE TABLE atrulePosition (
-      id INTEGER PRIMARY KEY,
-      atruleID INTEGER,
-      position INTEGER,
-      nameID INTEGER
     );
 
     CREATE INDEX declAtrule ON decl(atruleID);
@@ -268,43 +248,34 @@ export default async (args) => {
 
   const atrules = await db.all('SELECT parentAtruleID, name, id FROM atrule')
 
-  const atrulePositionsMultis = await db.all(
-    'SELECT atruleID FROM atrulePosition WHERE nameID IN (SELECT nameID FROM atrulePosition GROUP BY nameID HAVING COUNT(id) > 1) ORDER BY nameID, position'
-  )
+  const order = []
 
-  const atrulePositionsSingles = await db.all(
-    'SELECT atruleID FROM atrulePosition WHERE nameID IN (SELECT nameID FROM atrulePosition GROUP BY nameID HAVING COUNT(id) = 1)'
-  )
-
-  const unorderedAtruleIDs = new Set()
-  const orderedAtruleIDs = []
-  const nameMap = {}
-
-  for (const {atruleID} of atrulePositionsSingles) {
-    unorderedAtruleIDs.add(atruleID)
-  }
-
-  let index = 0
-
-  for (const {atruleID} of atrulePositionsMultis) {
-    unorderedAtruleIDs.delete(atruleID)
-
-    const orderedIndex = orderedAtruleIDs.indexOf(atruleID)
-
-    if (~orderedIndex) {
-      index = orderedIndex
-    } else {
-      orderedAtruleIDs.splice(++index, 0, atruleID)
+  if (input._atrules != null) {
+    for (const key of Reflect.ownKeys(input._atrules)) {
+      order.push(input._atrules[key])
     }
   }
 
-  const sortedAtruleIDs = Array.from(unorderedAtruleIDs).concat(
-    orderedAtruleIDs
-  )
+  atrules.sort((a, b) => {
+    const aIndex = order.indexOf(a.name)
+    const bIndex = order.indexOf(b.name)
 
-  atrules.sort(
-    (a, b) => sortedAtruleIDs.indexOf(a.id) - sortedAtruleIDs.indexOf(b.id)
-  )
+    if (aIndex === bIndex) {
+      return 0
+    }
+
+    if (!~aIndex) {
+      return -1
+    }
+
+    if (!~bIndex) {
+      return 1
+    }
+
+    return aIndex - bIndex
+  })
+
+  const nameMap = {}
 
   const buildCSS = async (searchID) => {
     let cssStr = ''
