@@ -6,16 +6,6 @@ In contrast to authoring, the most ideal way to ship CSS to browsers is with lit
 
 This project aims to combine those two ideals. The CLI takes a single ES module entry point, and outputs a single CSS file and a generated ES module that has a map of keys to the generated class names in the css file.
 
-## Usage
-
-build once
-
 ```
-npx @erickmerchant/css styles.js output
-```
-
-watch for changes
-
-```
-npx @erickmerchant/css -w styles.js output
+npx @erickmerchant/css --help
 ```
