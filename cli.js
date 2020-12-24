@@ -12,7 +12,7 @@ const usage = `
 
 ${bold('Usage:')}
 
- $ ${magenta('css')} [options] <input> <output>
+ $ ${magenta('css')} [options] <input-js> <output-directory>
 
 ${bold('Options:')}
 
