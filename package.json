@@ -13,6 +13,13 @@
   "license": "ISC",
   "author": "Erick Merchant <erickmerchant@gmail.com>",
   "type": "module",
+  "files": [
+    "LICENSE",
+    "README.md",
+    "lib/",
+    "cli.js",
+    "index.js"
+  ],
   "main": "index.js",
   "bin": {
     "css": "cli.js"
