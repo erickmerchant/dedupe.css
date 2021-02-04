@@ -122,6 +122,20 @@ const minify = (css) => {
   })
 }
 
+export const css = (strs, ...vars) => {
+  let result = ''
+
+  for (let i = 0; i < strs.length; i++) {
+    result += strs[i]
+
+    if (vars[i] != null) {
+      result += vars[i]
+    }
+  }
+
+  return postcss.parse(result)
+}
+
 export default async (args) => {
   const dbinstance = new sqlite3.Database(':memory:')
 
@@ -207,7 +221,7 @@ export default async (args) => {
   }
 
   if (input._start) {
-    const start = postcss.parse(input._start)
+    const start = input._start
 
     start.walkRules((rule) => {
       const parsed = selectorTokenizer.parse(rule.selector)
@@ -221,8 +235,6 @@ export default async (args) => {
   }
 
   if (input._end) {
-    input._end = postcss.parse(input._end)
-
     input._end.walkRules((rule) => {
       const parsed = selectorTokenizer.parse(rule.selector)
 
@@ -236,7 +248,7 @@ export default async (args) => {
 
   for (const namespace of Object.keys(inputStyles)) {
     for (const name of Object.keys(inputStyles[namespace])) {
-      const parsed = postcss.parse(inputStyles[namespace][name])
+      const parsed = inputStyles[namespace][name]
 
       const context = {namespace, name, position: 0}
 
