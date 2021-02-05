@@ -1,6 +1,5 @@
 #!/usr/bin/env node
-import arg from 'arg'
-import {magenta, bold} from 'kleur/colors'
+import {magenta, bold, arg} from 'sergeant'
 import action from './index.js'
 import path from 'path'
 import {fileURLToPath} from 'url'
