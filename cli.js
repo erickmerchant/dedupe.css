@@ -41,7 +41,7 @@ const program = async () => {
     })
 
     if (args['--help']) {
-      process.stdout.write(usage)
+      console.log(usage)
 
       return
     }
@@ -93,7 +93,7 @@ const program = async () => {
       run()
     }
   } catch (error) {
-    process.stderr.write(`${error}\n`)
+    console.error(error)
 
     process.exit(1)
   }

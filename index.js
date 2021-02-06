@@ -1,5 +1,6 @@
-import {gray} from 'kleur/colors'
+import {gray} from 'sergeant'
 import path from 'path'
+import crypto from 'crypto'
 import fs from 'fs'
 import stream from 'stream'
 import {promisify} from 'util'
@@ -12,7 +13,19 @@ import createGetUniqueID from './lib/create-get-unique-id.js'
 
 const finished = promisify(stream.finished)
 const mkdir = promisify(fs.mkdir)
+const readFile = promisify(fs.readFile)
+const fstat = promisify(fs.stat)
 const createWriteStream = fs.createWriteStream
+
+const getHashOfFile = async (file) => {
+  const stat = await fstat(file).catch(() => false)
+
+  if (!stat) return false
+
+  const content = await readFile(file, 'utf8')
+
+  return crypto.createHash('sha256').update(content).digest('hex')
+}
 
 const buildData = async (db, node, context = {}) => {
   if (node.type === 'decl') {
@@ -199,8 +212,15 @@ export default async (args) => {
     path.basename(args.input, path.extname(args.input))
   )
 
+  const [cssHash, jsHash] = await Promise.all([
+    getHashOfFile(`${outpath}.css`),
+    getHashOfFile(`${outpath}.js`)
+  ])
+
   const output = {
+    cssHash,
     css: createWriteStream(`${outpath}.css`),
+    jsHash,
     js: createWriteStream(`${outpath}.js`)
   }
 
@@ -466,13 +486,17 @@ export default async (args) => {
 
   return Promise.all(
     ['css', 'js'].map((type) =>
-      finished(output[type]).then(() => {
-        process.stdout.write(
-          `${gray('[css]')} saved ${path.relative(
-            process.cwd(),
-            outpath
-          )}.${type}\n`
-        )
+      finished(output[type]).then(async () => {
+        const hash = await getHashOfFile(`${outpath}.${type}`)
+
+        if (hash !== output[`${type}Hash`]) {
+          console.log(
+            `${gray('[css]')} saved ${path.relative(
+              process.cwd(),
+              outpath
+            )}.${type}`
+          )
+        }
       })
     )
   )
