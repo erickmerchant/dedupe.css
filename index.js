@@ -11,6 +11,8 @@ import shorthandLonghands from './lib/shorthand-longhands.js'
 import getClassNames from './lib/get-selectors.js'
 import createGetUniqueID from './lib/create-get-unique-id.js'
 
+const PARSED = Symbol('parsed')
+
 const finished = promisify(stream.finished)
 const mkdir = promisify(fs.mkdir)
 const readFile = promisify(fs.readFile)
@@ -136,17 +138,39 @@ const minify = (css) => {
 }
 
 export const css = (strs, ...vars) => {
-  let result = ''
+  let str = ''
 
   for (let i = 0; i < strs.length; i++) {
-    result += strs[i]
+    str += strs[i]
 
     if (vars[i] != null) {
-      result += vars[i]
+      if (Array.isArray(vars[i])) {
+        vars[i] = `${vars[i].join(';')};`
+      }
+
+      str += vars[i]
     }
   }
 
-  return postcss.parse(result)
+  const parsed = postcss.parse(str)
+
+  const result = {
+    [PARSED]: parsed
+  }
+
+  for (const node of parsed.nodes) {
+    const selectors = selectorTokenizer.parse(node.selector)
+
+    if (
+      selectors?.nodes?.length === 1 &&
+      selectors?.nodes?.[0]?.nodes?.length === 1 &&
+      selectors?.nodes?.[0]?.nodes?.[0]?.type === 'class'
+    ) {
+      result[selectors.nodes[0].nodes[0].name] = node.nodes
+    }
+  }
+
+  return result
 }
 
 export default async (args) => {
@@ -241,7 +265,7 @@ export default async (args) => {
   }
 
   if (input._start) {
-    const start = input._start
+    const start = input._start[PARSED]
 
     start.walkRules((rule) => {
       const parsed = selectorTokenizer.parse(rule.selector)
@@ -255,7 +279,7 @@ export default async (args) => {
   }
 
   if (input._end) {
-    input._end.walkRules((rule) => {
+    input._end[PARSED].walkRules((rule) => {
       const parsed = selectorTokenizer.parse(rule.selector)
 
       existingIDs.push(...getClassNames(parsed))
@@ -272,7 +296,7 @@ export default async (args) => {
 
       const context = {namespace, name, position: 0}
 
-      for (const node of parsed.nodes) {
+      for (const node of parsed) {
         await buildData(db, node, context)
       }
     }
