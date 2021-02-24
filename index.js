@@ -161,12 +161,12 @@ export const css = (strs, ...vars) => {
   for (const node of parsed.nodes) {
     const selectors = selectorTokenizer.parse(node.selector)
 
-    if (
-      selectors?.nodes?.length === 1 &&
-      selectors?.nodes?.[0]?.nodes?.length === 1 &&
-      selectors?.nodes?.[0]?.nodes?.[0]?.type === 'class'
-    ) {
-      result[selectors.nodes[0].nodes[0].name] = node.nodes
+    for (const selector of selectors.nodes) {
+      if (selector.nodes.length === 1 && selector.nodes[0].type === 'class') {
+        const arr = result[selector.nodes[0].name] ?? []
+
+        result[selector.nodes[0].name] = arr.concat(node.nodes)
+      }
     }
   }
 
