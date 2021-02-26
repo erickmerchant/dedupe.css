@@ -140,25 +140,41 @@ const minify = (css) => {
 export const css = (strs, ...vars) => {
   let str = ''
 
+  const replacements = {}
+
   for (let i = 0; i < strs.length; i++) {
     str += strs[i]
 
     if (vars[i] != null) {
       if (Array.isArray(vars[i])) {
-        vars[i] = `${vars[i].join(';')};`
-      }
+        const key = `${Date.now()}-${i}`
 
-      str += vars[i]
+        str += `/*${key}*/`
+
+        replacements[key] = vars[i]
+      } else {
+        str += vars[i]
+      }
     }
   }
 
   const parsed = postcss.parse(str)
 
+  parsed.walkComments((comment) => {
+    if (replacements[comment.text] != null) {
+      for (const node of replacements[comment.text]) {
+        comment.before(node.clone())
+      }
+
+      comment.remove()
+    }
+  })
+
   const result = {
     [PARSED]: parsed
   }
 
-  for (const node of parsed.nodes) {
+  parsed.each((node) => {
     const selectors = selectorTokenizer.parse(node.selector)
 
     for (const selector of selectors.nodes) {
@@ -168,7 +184,7 @@ export const css = (strs, ...vars) => {
         result[selector.nodes[0].name] = arr.concat(node.nodes)
       }
     }
-  }
+  })
 
   return result
 }
