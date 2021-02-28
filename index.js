@@ -301,7 +301,7 @@ export default async (args) => {
       existingIDs.push(...getClassNames(parsed))
     })
 
-    minify(input._end)
+    minify(input._end[PARSED])
   }
 
   const getUniqueID = createGetUniqueID(existingIDs)
@@ -493,7 +493,7 @@ export default async (args) => {
     })
   )
 
-  css.append(input._end ?? '')
+  css.append(input._end?.[PARSED] ?? '')
 
   output.css.end(css.toResult().css)
 
