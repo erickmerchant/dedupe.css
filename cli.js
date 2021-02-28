@@ -5,6 +5,7 @@ import path from 'path'
 import {fileURLToPath} from 'url'
 import childProcess from 'child_process'
 import chokidar from 'chokidar'
+import assert from 'assert'
 
 const usage = `
 @erickmerchant/css
@@ -46,13 +47,10 @@ const program = async () => {
       return
     }
 
-    if (args._.length < 2) {
-      throw RangeError('too few arguments')
-    }
-
-    if (args._.length > 2) {
-      throw RangeError('too many arguments')
-    }
+    assert.ok(
+      args._.length === 2,
+      RangeError(`too ${args._.length > 2 ? 'many' : 'few'} arguments`)
+    )
 
     const [input, output] = args._
 
