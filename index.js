@@ -4,7 +4,7 @@ import crypto from 'crypto'
 import fs from 'fs'
 import stream from 'stream'
 import {promisify} from 'util'
-import postcss, {list} from 'postcss'
+import postcss from 'postcss'
 import selectorTokenizer from 'css-selector-tokenizer'
 import sqlite3 from 'sqlite3'
 import shorthandLonghands from './lib/shorthand-longhands.js'
@@ -32,7 +32,7 @@ const getHashOfFile = async (file) => {
 const buildData = async (db, node, context = {}) => {
   if (node.type === 'decl') {
     const prop = node.prop
-    const value = minifyValue(node.value)
+    const value = node.value
 
     await db.run(
       'INSERT INTO name (name, namespace) VALUES (?, ?) ON CONFLICT (name, namespace) DO NOTHING',
@@ -104,37 +104,6 @@ const buildData = async (db, node, context = {}) => {
       })
     )
   }
-}
-
-const minifyValue = (value) =>
-  list
-    .comma(value)
-    .map((v) =>
-      v
-        .split('\n')
-        .map((s) => s.trim())
-        .join(' ')
-    )
-    .join(',')
-
-const minify = (css) => {
-  css.walk((node) => {
-    for (const prop of ['before', 'between', 'after']) {
-      if (node.raws[prop]) {
-        node.raws[prop] = node.raws[prop].trim()
-      }
-
-      node.raws.semicolon = false
-
-      if (node.value) {
-        node.value = minifyValue(node.value)
-      }
-
-      if (node.selectors) {
-        node.selector = node.selectors.join(',')
-      }
-    }
-  })
 }
 
 export const css = (strs, ...vars) => {
@@ -289,8 +258,6 @@ export default async (args) => {
       existingIDs.push(...getClassNames(parsed))
     })
 
-    minify(start)
-
     css.append(start)
   }
 
@@ -300,8 +267,6 @@ export default async (args) => {
 
       existingIDs.push(...getClassNames(parsed))
     })
-
-    minify(input._end[PARSED])
   }
 
   const getUniqueID = createGetUniqueID(existingIDs)
