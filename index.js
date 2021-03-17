@@ -8,7 +8,6 @@ import postcss from 'postcss'
 import selectorTokenizer from 'css-selector-tokenizer'
 import sqlite3 from 'sqlite3'
 import shorthandLonghands from './lib/shorthand-longhands.js'
-import getClassNames from './lib/get-selectors.js'
 import createGetUniqueID from './lib/create-get-unique-id.js'
 
 const PARSED = Symbol('parsed')
@@ -197,8 +196,6 @@ export default async (args) => {
     CREATE UNIQUE INDEX uniqueAtrule ON atrule(parentAtruleID, name);
   `)
 
-  const existingIDs = []
-
   const cacheBustedInput = `${args.input}?${Date.now()}`
 
   const input = await import(cacheBustedInput)
@@ -252,24 +249,10 @@ export default async (args) => {
   if (input._start) {
     const start = input._start[PARSED]
 
-    start.walkRules((rule) => {
-      const parsed = selectorTokenizer.parse(rule.selector)
-
-      existingIDs.push(...getClassNames(parsed))
-    })
-
     css.append(start)
   }
 
-  if (input._end) {
-    input._end[PARSED].walkRules((rule) => {
-      const parsed = selectorTokenizer.parse(rule.selector)
-
-      existingIDs.push(...getClassNames(parsed))
-    })
-  }
-
-  const getUniqueID = createGetUniqueID(existingIDs)
+  const getUniqueID = createGetUniqueID(args['--prefix'] ?? '')
 
   for (const namespace of Object.keys(inputStyles)) {
     for (const name of Object.keys(inputStyles[namespace])) {
@@ -474,7 +457,7 @@ export default async (args) => {
         .write(`export const ${namespace} = new Proxy(${stringifiedMap}, {
         get(target, prop) {
           if ({}.hasOwnProperty.call(target, prop)) {
-            return target[prop]
+            return '${namespace}:' + prop + ' ' + target[prop]
           }
 
           throw Error(\`\${prop} is undefined\`)

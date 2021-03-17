@@ -22,7 +22,11 @@ ${bold('Options:')}
 
  ${bold('-d, --dev')}
 
-  throw on missing
+  throw on missing and add original classes for debugging
+
+ ${bold('-p, --prefix')}
+
+  prepend classes with prefix
 
  ${bold('-h, --help')}
 
@@ -34,9 +38,11 @@ const program = async () => {
   try {
     const args = arg({
       '--watch': String,
+      '--prefix': String,
       '--dev': Boolean,
       '--help': Boolean,
       '-w': '--watch',
+      '-p': '--prefix',
       '-d': '--dev',
       '-h': '--help'
     })
