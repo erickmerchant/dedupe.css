@@ -22,7 +22,7 @@ ${bold('Options:')}
 
  ${bold('-d, --dev')}
 
-  don't minify. throw on missing
+  throw on missing
 
  ${bold('-h, --help')}
 
