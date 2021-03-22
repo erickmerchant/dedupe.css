@@ -1,11 +1,12 @@
 #!/usr/bin/env node
-import {magenta, bold, arg} from 'sergeant'
-import action from './index.js'
-import path from 'path'
-import {fileURLToPath} from 'url'
+import assert from 'assert'
 import childProcess from 'child_process'
 import chokidar from 'chokidar'
-import assert from 'assert'
+import path from 'path'
+import {arg, bold, magenta} from 'sergeant'
+import {fileURLToPath} from 'url'
+
+import {compileCSS} from './index.js'
 
 const usage = `
 @erickmerchant/css
@@ -67,7 +68,7 @@ const program = async () => {
     if (!args['--watch']) {
       args.input = path.join(process.cwd(), args.input)
 
-      await action(args)
+      await compileCSS(args)
     } else {
       const watcher = chokidar.watch(args['--watch'], {ignoreInitial: true})
 

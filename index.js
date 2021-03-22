@@ -1,14 +1,15 @@
-import {gray} from 'sergeant'
-import path from 'path'
 import crypto from 'crypto'
+import selectorTokenizer from 'css-selector-tokenizer'
 import fs from 'fs'
+import path from 'path'
+import postcss from 'postcss'
+import {gray} from 'sergeant'
+import sqlite3 from 'sqlite3'
 import stream from 'stream'
 import {promisify} from 'util'
-import postcss from 'postcss'
-import selectorTokenizer from 'css-selector-tokenizer'
-import sqlite3 from 'sqlite3'
-import shorthandLonghands from './lib/shorthand-longhands.js'
-import createGetUniqueID from './lib/create-get-unique-id.js'
+
+import {createGetUniqueID} from './lib/create-get-unique-id.js'
+import {shorthandLonghands} from './lib/shorthand-longhands.js'
 
 const PARSED = Symbol('parsed')
 
@@ -157,7 +158,7 @@ export const css = (strs, ...vars) => {
   return result
 }
 
-export default async (args) => {
+export const compileCSS = async (args) => {
   const dbinstance = new sqlite3.Database(':memory:')
 
   const db = {
