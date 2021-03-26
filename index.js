@@ -406,10 +406,6 @@ export const compileCSS = async (args) => {
 
         cssStr += await buildCSS(id)
 
-        atrules.splice(i, 1)
-
-        i--
-
         cssStr += '}'
       }
     }
