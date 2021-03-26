@@ -8,6 +8,7 @@ import sqlite3 from 'sqlite3'
 import stream from 'stream'
 import {promisify} from 'util'
 
+import {RAW, REPLACEMENT} from './css.js'
 import {createGetUniqueID} from './lib/create-get-unique-id.js'
 import {shorthandLonghands} from './lib/shorthand-longhands.js'
 
@@ -106,7 +107,9 @@ const buildData = async (db, node, context = {}) => {
   }
 }
 
-export const css = (strs, ...vars) => {
+const parse = (args) => {
+  const {strs, vars} = args
+
   let str = ''
 
   const replacements = {}
@@ -115,12 +118,14 @@ export const css = (strs, ...vars) => {
     str += strs[i]
 
     if (vars[i] != null) {
-      if (Array.isArray(vars[i])) {
+      if (vars[i][REPLACEMENT]) {
         const key = `${Date.now()}-${i}`
 
         str += `/*${key}*/`
 
-        replacements[key] = vars[i]
+        replacements[key] = parse(vars[i][REPLACEMENT][RAW])[
+          vars[i][REPLACEMENT].key
+        ]
       } else {
         str += vars[i]
       }
@@ -206,7 +211,7 @@ export const compileCSS = async (args) => {
   for (const namespace of Object.keys(input)) {
     if (namespace.startsWith('_')) continue
 
-    inputStyles[namespace] = input[namespace]
+    inputStyles[namespace] = parse(input[namespace]?.[RAW])
   }
 
   await mkdir(path.join(process.cwd(), args.output), {
@@ -247,8 +252,8 @@ export const compileCSS = async (args) => {
     map[namespace][name].add(id)
   }
 
-  if (input._start) {
-    const start = input._start[PARSED]
+  if (input?._start?.[RAW]) {
+    const start = parse(input?._start?.[RAW])[PARSED]
 
     css.append(start)
   }
@@ -267,8 +272,6 @@ export const compileCSS = async (args) => {
     }
   }
 
-  const atrules = await db.all('SELECT parentAtruleID, name, id FROM atrule')
-
   const order = []
 
   if (input._atrules != null) {
@@ -276,25 +279,6 @@ export const compileCSS = async (args) => {
       order.push(input._atrules[key])
     }
   }
-
-  atrules.sort((a, b) => {
-    const aIndex = order.indexOf(a.name)
-    const bIndex = order.indexOf(b.name)
-
-    if (aIndex === bIndex) {
-      return 0
-    }
-
-    if (!~aIndex) {
-      return -1
-    }
-
-    if (!~bIndex) {
-      return 1
-    }
-
-    return aIndex - bIndex
-  })
 
   const nameMap = {}
 
@@ -398,16 +382,38 @@ export const compileCSS = async (args) => {
       cssStr += `}`
     }
 
-    for (let i = 0; i < atrules.length; i++) {
-      const {parentAtruleID, name, id} = atrules[i]
+    const atrules = await db.all(
+      'SELECT parentAtruleID, name, id FROM atrule WHERE parentAtruleID = ?',
+      searchID
+    )
 
-      if (parentAtruleID === searchID) {
-        cssStr += `${name}{`
+    atrules.sort((a, b) => {
+      const aIndex = order.indexOf(a.name)
+      const bIndex = order.indexOf(b.name)
 
-        cssStr += await buildCSS(id)
-
-        cssStr += '}'
+      if (aIndex === bIndex) {
+        return 0
       }
+
+      if (!~aIndex) {
+        return -1
+      }
+
+      if (!~bIndex) {
+        return 1
+      }
+
+      return aIndex - bIndex
+    })
+
+    for (let i = 0; i < atrules.length; i++) {
+      const {name, id} = atrules[i]
+
+      cssStr += `${name}{`
+
+      cssStr += await buildCSS(id)
+
+      cssStr += '}'
     }
 
     return cssStr
@@ -438,7 +444,7 @@ export const compileCSS = async (args) => {
     })
   )
 
-  css.append(input._end?.[PARSED] ?? '')
+  css.append(input?._end?.[RAW] ? parse(input._end[RAW])?.[PARSED] : '')
 
   output.css.end(css.toResult().css)
 

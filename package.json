@@ -18,7 +18,8 @@
     "README.md",
     "lib/",
     "cli.js",
-    "index.js"
+    "index.js",
+    "css.js"
   ],
   "main": "index.js",
   "bin": {
