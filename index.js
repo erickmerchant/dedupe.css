@@ -451,11 +451,15 @@ export const compileCSS = async (args) => {
       map[namespace][name] = Array.from(map[namespace][name]).join(' ')
     }
 
-    const stringifiedMap = JSON.stringify(map[namespace], null, 2)
-
     if (args['--dev']) {
-      output.js
-        .write(`export const ${namespace} = new Proxy(${stringifiedMap}, {
+      output.js.write(`export const ${namespace} = new Proxy({${Object.entries(
+        map[namespace]
+      )
+        .map(
+          ([key, value]) =>
+            `get [${JSON.stringify(key)}]() { return ${JSON.stringify(value)} }`
+        )
+        .join(',')}}, {
         get(target, prop) {
           if ({}.hasOwnProperty.call(target, prop)) {
             return '${namespace}:' + prop + ' ' + target[prop]
@@ -465,7 +469,13 @@ export const compileCSS = async (args) => {
         }
       })\n`)
     } else {
-      output.js.write(`export const ${namespace} = ${stringifiedMap}\n`)
+      output.js.write(
+        `export const ${namespace} = ${JSON.stringify(
+          map[namespace],
+          null,
+          2
+        )}\n`
+      )
     }
   }
 
