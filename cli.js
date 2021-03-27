@@ -6,7 +6,7 @@ import path from 'path'
 import {arg, bold, magenta} from 'sergeant'
 import {fileURLToPath} from 'url'
 
-import {compileCSS} from './index.js'
+import {compile} from './compile.js'
 
 const usage = `
 @erickmerchant/css
@@ -68,7 +68,7 @@ const program = async () => {
     if (!args['--watch']) {
       args.input = path.join(process.cwd(), args.input)
 
-      await compileCSS(args)
+      await compile(args)
     } else {
       const watcher = chokidar.watch(args['--watch'], {ignoreInitial: true})
 

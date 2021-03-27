@@ -163,7 +163,7 @@ const parse = (args) => {
   return result
 }
 
-export const compileCSS = async (args) => {
+export const compile = async (args) => {
   const dbinstance = new sqlite3.Database(':memory:')
 
   const db = {
