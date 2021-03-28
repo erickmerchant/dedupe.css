@@ -6,7 +6,7 @@ import path from 'path'
 import {arg, bold, magenta} from 'sergeant'
 import {fileURLToPath} from 'url'
 
-import {compile} from './compile.js'
+import {compile} from './lib/compile.js'
 
 const usage = `
 @erickmerchant/css
