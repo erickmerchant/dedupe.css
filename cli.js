@@ -35,25 +35,21 @@ ${bold('Options:')}
 
 `
 
-const program = async () => {
-  try {
-    const args = arg({
-      '--watch': String,
-      '--prefix': String,
-      '--dev': Boolean,
-      '--help': Boolean,
-      '-w': '--watch',
-      '-p': '--prefix',
-      '-d': '--dev',
-      '-h': '--help'
-    })
+try {
+  const args = arg({
+    '--watch': String,
+    '--prefix': String,
+    '--dev': Boolean,
+    '--help': Boolean,
+    '-w': '--watch',
+    '-p': '--prefix',
+    '-d': '--dev',
+    '-h': '--help'
+  })
 
-    if (args['--help']) {
-      console.log(usage)
-
-      return
-    }
-
+  if (args['--help']) {
+    console.log(usage)
+  } else {
     assert.ok(
       args._.length === 2,
       RangeError(`too ${args._.length > 2 ? 'many' : 'few'} arguments`)
@@ -97,11 +93,9 @@ const program = async () => {
 
       run()
     }
-  } catch (error) {
-    console.error(error)
-
-    process.exit(1)
   }
-}
+} catch (error) {
+  console.error(error)
 
-program()
+  process.exit(1)
+}
