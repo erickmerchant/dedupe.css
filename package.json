@@ -31,6 +31,7 @@
   "dependencies": {
     "chokidar": "^3.4.3",
     "css-selector-tokenizer": "^0.7.3",
+    "mdn-data": "^2.0.18",
     "postcss": "^8.1.10",
     "sergeant": "^29.0.0",
     "sqlite3": "^5.0.0"

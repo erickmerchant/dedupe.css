@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+
 import assert from 'assert'
 import childProcess from 'child_process'
 import chokidar from 'chokidar'
