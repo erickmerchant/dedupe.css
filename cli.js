@@ -53,7 +53,7 @@ try {
   } else {
     assert.ok(
       args._.length === 2,
-      RangeError(`too ${args._.length > 2 ? 'many' : 'few'} arguments`)
+      RangeError(`Too ${args._.length > 2 ? 'many' : 'few'} arguments`)
     )
 
     const [input, output] = args._
