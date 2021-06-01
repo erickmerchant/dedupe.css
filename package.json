@@ -30,7 +30,7 @@
   },
   "dependencies": {
     "chokidar": "^3.4.3",
-    "css-selector-tokenizer": "^0.7.3",
+    "css-selector-tokenizer": "^0.8.0",
     "mdn-data": "^2.0.18",
     "postcss": "^8.1.10",
     "postcss-sort-media-queries": "^3.8.9",
