@@ -14,11 +14,13 @@
   "author": "Erick Merchant <erickmerchant@gmail.com>",
   "type": "module",
   "files": [
-    "LICENSE",
+    "template.js",
     "README.md",
+    "LICENSE",
     "lib/",
-    "cli.js",
-    "css.js"
+    "dev-template.js",
+    "css.js",
+    "cli.js"
   ],
   "main": "css.js",
   "bin": {
