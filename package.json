@@ -14,11 +14,9 @@
   "author": "Erick Merchant <erickmerchant@gmail.com>",
   "type": "module",
   "files": [
-    "template.js",
     "README.md",
     "LICENSE",
     "lib/",
-    "dev-template.js",
     "css.js",
     "cli.js"
   ],
