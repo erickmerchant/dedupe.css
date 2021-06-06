@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 
+import arg from 'arg'
 import assert from 'assert'
 import childProcess from 'child_process'
 import chokidar from 'chokidar'
+import {bold, magenta} from 'kleur/colors'
 import path from 'path'
-import {arg, bold, magenta} from 'sergeant'
 import {fileURLToPath} from 'url'
 
 import {compile} from './lib/compile.js'
