@@ -2,7 +2,7 @@ export const RAW = Symbol('raw')
 
 export const REPLACEMENT = Symbol('replacement')
 
-export const VALIDATE = Symbol('validate')
+const VALIDATE = Symbol('validate')
 
 export const css = (strs, ...vars) => {
   const result = {[RAW]: {strs, vars}}
