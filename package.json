@@ -31,9 +31,9 @@
   "dependencies": {
     "arg": "^5.0.0",
     "chokidar": "^3.4.3",
-    "css-selector-tokenizer": "^0.8.0",
     "kleur": "^4.1.4",
     "mdn-data": "^2.0.18",
+    "parsel-js": "^1.0.2",
     "postcss": "^8.1.10",
     "postcss-sort-media-queries": "^3.8.9",
     "sqlite3": "^5.0.0"
