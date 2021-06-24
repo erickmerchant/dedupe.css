@@ -13,11 +13,11 @@ import {compile} from './lib/compile.js'
 const usage = `
 @erickmerchant/css
 
-${bold('Usage:')}
+${magenta('Usage:')}
 
- $ ${magenta('css')} [options] <input-js> <output-directory>
+ $ css [options] <input-js> <output-directory>
 
-${bold('Options:')}
+${magenta('Options:')}
 
  ${bold('-w <directory>, --watch <directory>')}
 
