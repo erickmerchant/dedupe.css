@@ -18,6 +18,8 @@ export const css = (strs, ...vars) => {
   })
 }
 
+css.dev = false
+
 export const define = (vmapped) => {
   const result = {}
 
@@ -45,7 +47,7 @@ export const concat = (classes, name, props) => {
     }
   }
 
-  if (import.meta.env?.DEV) {
+  if (css.dev) {
     if (!classes[VALIDATE](name, list)) {
       throw Error(`invalid classList: ${list.join(' ')}`)
     }
