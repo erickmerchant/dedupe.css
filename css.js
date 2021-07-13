@@ -26,7 +26,7 @@ export const concat = (...args) => {
           list.push(key)
         }
       }
-    } else {
+    } else if (arg) {
       list.push(arg)
     }
   }
