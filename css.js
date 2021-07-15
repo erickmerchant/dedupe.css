@@ -15,21 +15,3 @@ export const css = (strs, ...vars) => {
     }
   })
 }
-
-export const concat = (...args) => {
-  const list = []
-
-  for (const arg of args) {
-    if (typeof arg === 'object') {
-      for (const [key, val] of Object.entries(arg)) {
-        if (val) {
-          list.push(key)
-        }
-      }
-    } else if (arg) {
-      list.push(arg)
-    }
-  }
-
-  return list.join(' ')
-}
