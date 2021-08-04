@@ -36,7 +36,7 @@
     "parsel-js": "^1.0.2",
     "postcss": "^8.1.10",
     "postcss-sort-media-queries": "^3.8.9",
-    "sqlite3": "^5.0.0"
+    "sqlite3": "^4.2.0"
   },
   "devDependencies": {
     "@erickmerchant/eslint-config": "^3.0.0",
