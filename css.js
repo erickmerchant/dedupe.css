@@ -1,17 +1,13 @@
-export const RAW = Symbol('raw')
-
-export const REPLACEMENT = Symbol('replacement')
-
 export const css = (strs, ...vars) => {
-  const result = {[RAW]: {strs, vars}}
+  let str = ''
 
-  return new Proxy(result, {
-    get(obj, key) {
-      if (key === RAW) return obj[RAW]
+  for (let i = 0; i < strs.length; i++) {
+    str += strs[i]
 
-      return {
-        [REPLACEMENT]: {[RAW]: obj[RAW], key}
-      }
+    if (vars[i] != null) {
+      str += vars[i]
     }
-  })
+  }
+
+  return str
 }
