@@ -15,9 +15,17 @@ const usage = `
 
 ${magenta('Usage:')}
 
- $ css [options] <input-js> <output-directory>
+ $ css [options]
 
 ${magenta('Options:')}
+
+ ${bold('-i <input-file>, --input-file <input-file>')}
+
+  the input
+
+ ${bold('-o <output-directory>, --output-directory <output-directory>')}
+
+  the output directory
 
  ${bold('-w <directory>, --watch <directory>')}
 
@@ -40,9 +48,13 @@ ${magenta('Options:')}
 try {
   const args = arg({
     '--watch': String,
+    '--input-file': String,
+    '--output-directory': String,
     '--prefix': String,
     '--dev': Boolean,
     '--help': Boolean,
+    '-i': '--input-file',
+    '-o': '--output-directory',
     '-w': '--watch',
     '-p': '--prefix',
     '-d': '--dev',
@@ -52,29 +64,24 @@ try {
   if (args['--help']) {
     console.log(usage);
   } else {
-    assert.ok(
-      args._.length === 2,
-      RangeError(`Too ${args._.length > 2 ? 'many' : 'few'} arguments`)
-    );
-
-    const [input, output] = args._;
-
-    args.input = input;
-
-    args.output = output;
+    assert.ok(args._.length === 0, RangeError(`Too many arguments`));
 
     if (!args['--watch']) {
-      args.input = path.join(process.cwd(), args.input);
+      args['--input-file'] = path.join(process.cwd(), args['--input-file']);
 
       await compile(args);
     } else {
-      const watcher = chokidar.watch(args['--watch'], {ignoreInitial: true});
+      const watcher = chokidar.watch(args['--watch'], {
+        ignoreInitial: true,
+      });
 
       const run = async () => {
         const rargs = [
           path.join(path.dirname(fileURLToPath(import.meta.url)), './cli.js'),
-          args.input,
-          args.output,
+          '-i',
+          args['--input-file'],
+          '-o',
+          args['--output-directory'],
         ];
 
         if (args['--dev']) {
