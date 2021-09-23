@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 
-import arg from 'arg'
-import assert from 'assert'
-import childProcess from 'child_process'
-import chokidar from 'chokidar'
-import {bold, magenta} from 'kleur/colors'
-import path from 'path'
-import {fileURLToPath} from 'url'
+import arg from 'arg';
+import assert from 'assert';
+import childProcess from 'child_process';
+import chokidar from 'chokidar';
+import {bold, magenta} from 'kleur/colors';
+import path from 'path';
+import {fileURLToPath} from 'url';
 
-import {compile} from './lib/compile.js'
+import {compile} from './lib/compile.js';
 
 const usage = `
 @erickmerchant/css
@@ -35,7 +35,7 @@ ${magenta('Options:')}
 
   display this message
 
-`
+`;
 
 try {
   const args = arg({
@@ -46,58 +46,58 @@ try {
     '-w': '--watch',
     '-p': '--prefix',
     '-d': '--dev',
-    '-h': '--help'
-  })
+    '-h': '--help',
+  });
 
   if (args['--help']) {
-    console.log(usage)
+    console.log(usage);
   } else {
     assert.ok(
       args._.length === 2,
       RangeError(`Too ${args._.length > 2 ? 'many' : 'few'} arguments`)
-    )
+    );
 
-    const [input, output] = args._
+    const [input, output] = args._;
 
-    args.input = input
+    args.input = input;
 
-    args.output = output
+    args.output = output;
 
     if (!args['--watch']) {
-      args.input = path.join(process.cwd(), args.input)
+      args.input = path.join(process.cwd(), args.input);
 
-      await compile(args)
+      await compile(args);
     } else {
-      const watcher = chokidar.watch(args['--watch'], {ignoreInitial: true})
+      const watcher = chokidar.watch(args['--watch'], {ignoreInitial: true});
 
       const run = async () => {
         const rargs = [
           path.join(path.dirname(fileURLToPath(import.meta.url)), './cli.js'),
           args.input,
-          args.output
-        ]
+          args.output,
+        ];
 
         if (args['--dev']) {
-          rargs.push('--dev')
+          rargs.push('--dev');
         }
 
         const spawned = childProcess.spawn(process.execPath, rargs, {
           stdio: 'inherit',
-          detached: true
-        })
+          detached: true,
+        });
 
         spawned.on('error', (err) => {
-          console.error(err)
-        })
-      }
+          console.error(err);
+        });
+      };
 
-      watcher.on('all', run)
+      watcher.on('all', run);
 
-      run()
+      run();
     }
   }
 } catch (error) {
-  console.error(error)
+  console.error(error);
 
-  process.exit(1)
+  process.exit(1);
 }

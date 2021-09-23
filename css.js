@@ -1,13 +1,13 @@
 export const css = (strs, ...vars) => {
-  let str = ''
+  let str = '';
 
   for (let i = 0; i < strs.length; i++) {
-    str += strs[i]
+    str += strs[i];
 
     if (vars[i] != null) {
-      str += vars[i]
+      str += vars[i];
     }
   }
 
-  return str
-}
+  return str;
+};
