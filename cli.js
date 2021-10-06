@@ -15,33 +15,24 @@ const usage = `
 
 ${magenta('Usage:')}
 
- $ css [options]
+  $ css [options] -i <string> -o <string>
 
 ${magenta('Options:')}
 
- ${bold('-i <input-file>, --input-file <input-file>')}
+  --input-file <string>,            
+          -i <string>             the input file
 
-  the input
+  --output-directory <string>,      
+                 -o <string>      the output directory 
 
- ${bold('-o <output-directory>, --output-directory <output-directory>')}
+  --prefix <string>, -p <string>  prepend classes with prefix
 
-  the output directory
+  --watch, -w                     watch for changes
 
- ${bold('-w, --watch')}
+  --dev, -d                       throw on missing and add original classes 
+                                  for debugging
 
-  watch for changes in <directory>
-
- ${bold('-d, --dev')}
-
-  throw on missing and add original classes for debugging
-
- ${bold('-p, --prefix')}
-
-  prepend classes with prefix
-
- ${bold('-h, --help')}
-
-  display this message
+  --help, -h                      display this message
 
 `;
 
@@ -65,6 +56,10 @@ try {
     console.log(usage);
   } else {
     assert.ok(args._.length === 0, RangeError(`Too many arguments`));
+
+    assert.ok(args['--input-file'], '--input-file is required');
+
+    assert.ok(args['--output-directory'], '--output-directory is required');
 
     if (!args['--watch']) {
       args['--input-file'] = path.join(process.cwd(), args['--input-file']);
