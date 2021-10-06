@@ -4,7 +4,7 @@ import arg from 'arg';
 import assert from 'assert';
 import childProcess from 'child_process';
 import chokidar from 'chokidar';
-import {bold, magenta} from 'kleur/colors';
+import {magenta} from 'kleur/colors';
 import path from 'path';
 import {fileURLToPath} from 'url';
 
@@ -20,10 +20,10 @@ ${magenta('Usage:')}
 ${magenta('Options:')}
 
   --input-file <string>,            
-          -i <string>             the input file
+            -i <string>           the input file
 
   --output-directory <string>,      
-                 -o <string>      the output directory 
+                  -o <string>     the output directory 
 
   --prefix <string>, -p <string>  prepend classes with prefix
 
