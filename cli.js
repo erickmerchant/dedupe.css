@@ -27,7 +27,7 @@ ${magenta('Options:')}
 
   the output directory
 
- ${bold('-w <directory>, --watch <directory>')}
+ ${bold('-w, --watch')}
 
   watch for changes in <directory>
 
@@ -47,7 +47,7 @@ ${magenta('Options:')}
 
 try {
   const args = arg({
-    '--watch': String,
+    '--watch': Boolean,
     '--input-file': String,
     '--output-directory': String,
     '--prefix': String,
@@ -71,7 +71,7 @@ try {
 
       await compile(args);
     } else {
-      const watcher = chokidar.watch(args['--watch'], {
+      const watcher = chokidar.watch(path.dirname(args['--input-file']), {
         ignoreInitial: true,
       });
 
