@@ -2,13 +2,13 @@
   "name": "dedupe.css",
   "version": "1.0.0",
   "description": "A CSS from JS tool.",
-  "homepage": "https://github.com/erickmerchant/css#readme",
+  "homepage": "https://github.com/erickmerchant/dedupe.css#readme",
   "bugs": {
-    "url": "https://github.com/erickmerchant/css/issues"
+    "url": "https://github.com/erickmerchant/dedupe.css/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/erickmerchant/css.git"
+    "url": "git+https://github.com/erickmerchant/dedupe.css.git"
   },
   "license": "ISC",
   "author": "Erick Merchant <erickmerchant@gmail.com>",
