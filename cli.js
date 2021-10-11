@@ -15,7 +15,7 @@ dedupe.css
 
 ${magenta('Usage:')}
 
-  $ css [options] -i <string> -o <string>
+  $ dedupe.css [options] -i <string> -o <string>
 
 ${magenta('Options:')}
 
