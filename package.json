@@ -22,7 +22,7 @@
   ],
   "main": "css.js",
   "bin": {
-    "css": "cli.js"
+    "dedupe.css": "cli.js"
   },
   "scripts": {
     "lint": "eslint . --ignore-path .gitignore",
