@@ -1,0 +1,53 @@
+{
+  "name": "dedupe.css",
+  "version": "1.0.0",
+  "description": "A CSS from JS tool.",
+  "homepage": "https://github.com/erickmerchant/css#readme",
+  "bugs": {
+    "url": "https://github.com/erickmerchant/css/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/erickmerchant/css.git"
+  },
+  "license": "ISC",
+  "author": "Erick Merchant <erickmerchant@gmail.com>",
+  "type": "module",
+  "files": [
+    "README.md",
+    "LICENSE",
+    "lib/",
+    "css.js",
+    "cli.js"
+  ],
+  "main": "css.js",
+  "bin": {
+    "css": "cli.js"
+  },
+  "scripts": {
+    "lint": "eslint . --ignore-path .gitignore",
+    "test": "npm run lint"
+  },
+  "dependencies": {
+    "arg": "^5.0.0",
+    "chokidar": "^3.4.3",
+    "kleur": "^4.1.4",
+    "mdn-data": "^2.0.18",
+    "parsel-js": "^1.0.2",
+    "postcss": "^8.1.10",
+    "postcss-nesting": "^8.0.1",
+    "postcss-sort-media-queries": "^4.1.0",
+    "sql.js": "^1.5.0"
+  },
+  "devDependencies": {
+    "@erickmerchant/eslint-config": "^3.0.0",
+    "@erickmerchant/prettier-config": "^2.0.0"
+  },
+  "engines": {
+    "node": ">=14.3"
+  },
+  "eslintConfig": {
+    "extends": "@erickmerchant/eslint-config"
+  },
+  "prettier": "@erickmerchant/prettier-config"
+}
