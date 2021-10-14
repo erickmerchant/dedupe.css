@@ -1,6 +1,6 @@
 {
   "name": "dedupe.css",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "A CSS from JS tool.",
   "homepage": "https://github.com/erickmerchant/dedupe.css#readme",
   "bugs": {
