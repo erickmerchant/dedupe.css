@@ -10,7 +10,7 @@ The CLI takes a single JS module input file, and then outputs a single CSS file,
 
 ### the entry file
 
-In this contrived example we have four rules, each with a class selector and some declarations. [postcss-nesting] is used to allow nesting.
+In this contrived example we have four classes: `.box-1`, `.box-2`, `.box-3`, and `.box-4`. [postcss-nesting] is used to allow nesting.
 
 ```javascript
 // Please note that "css" only outputs a string. It is used to gain syntax highlighting, and is not strictly necessary.
@@ -183,9 +183,9 @@ export const classes = new Proxy(
 );
 ```
 
-## pseudo selectors
+## additional selectors
 
-Not in the example, but you can use pseudo-elements, pseudo-classes, and other modifiers, so long as they target an element that has a class. No complex selectors are allowed essentially. This restriction exists, because otherwise dedupe.css couldn't guarantee that the styles would actually be applied as intended, since it changes the order of declarations. Please note that pseudo-classes and other modifiers also can't always be optimized like classes alone can, though pseudo-elements always can.
+You can use pseudo-elements, pseudo-classes, and other modifiers, so long as they target an element with a class, and the selector itself starts with that class. No complex selectors are allowed essentially. This restriction exists because otherwise dedupe.css couldn't guarantee that the styles would actually be applied as intended, since it changes the order of declarations. Please note that pseudo-classes and other modifiers also can't always be optimized like classes alone can, though pseudo-elements always can.
 
 ```css
 .box-1 {
