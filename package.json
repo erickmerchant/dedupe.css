@@ -35,7 +35,7 @@
     "mdn-data": "^2.0.18",
     "parsel-js": "^1.0.2",
     "postcss": "^8.1.10",
-    "postcss-nesting": "^9.0.0",
+    "postcss-nesting": "^10.0.0",
     "postcss-sort-media-queries": "^4.1.0",
     "sql.js": "^1.5.0"
   },
